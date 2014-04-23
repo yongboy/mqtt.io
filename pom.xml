@@ -1,0 +1,70 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>com.mqtt.io</groupId>
+	<artifactId>mqtt.io</artifactId>
+	<version>0.0.1</version>
+	<packaging>jar</packaging>
+
+	<name>mqtt.io</name>
+	<url>http://maven.apache.org</url>
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	</properties>
+
+	<!--repositories>
+		<repository>
+			<releases>
+				<enabled>true</enabled>
+				<updatePolicy>daily</updatePolicy>
+			</releases>
+			<snapshots>
+				<enabled>true</enabled>
+				<updatePolicy>daily</updatePolicy>
+			</snapshots>
+			<id>repo.youku.wireless</id>
+			<name>repo.youku.wireless</name>
+			<url>http://10.103.14.128:8081/nexus/content/groups/public/</url>
+			<layout>default</layout>
+		</repository>
+		
+		<repository>
+			<releases>
+				<enabled>true</enabled>
+				<updatePolicy>daily</updatePolicy>
+			</releases>
+			<snapshots>
+				<enabled>true</enabled>
+				<updatePolicy>daily</updatePolicy>
+			</snapshots>
+			<id>repo.youku.log</id>
+			<name>repo.youku.log</name>
+			<url>http://repo.data.1verge.net/nexus/content/groups/public/</url>
+			<layout>default</layout>
+		</repository>
+	</repositories-->
+
+
+	<dependencies>
+  <dependency>
+    <groupId>io.netty</groupId>
+    <artifactId>netty-all</artifactId> <!-- Use 'netty-all' for 4.0 or above -->
+    <version>4.0.18.Final</version>
+    <scope>compile</scope>
+  </dependency>
+
+		<dependency>
+			<groupId>com.albin.mqtt</groupId>
+			<artifactId>mqtt-library</artifactId>
+			<version>0.1</version>
+		</dependency>
+
+		<dependency>
+			<groupId>log4j</groupId>
+			<artifactId>log4j</artifactId>
+			<version>1.2.17</version>
+		</dependency>
+	</dependencies>
+</project>
