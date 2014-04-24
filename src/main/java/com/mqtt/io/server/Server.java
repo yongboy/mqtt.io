@@ -14,7 +14,7 @@ import com.mqtt.io.coder.MqttMessageNewEncoder;
 import com.mqtt.io.tool.ConfigService;
 
 public class Server {
-	private static int port = ConfigService.getIntProperty("mqtt.port", 8080);
+	private static int port = ConfigService.getIntProperty("mqtt.port", 1883);
 
 	public Server() {
 	}
@@ -40,11 +40,7 @@ public class Server {
 					});
 
 			Channel ch = b.bind(port).sync().channel();
-			System.out.println("Web socket server started at port " + port
-					+ '.');
-			System.out
-					.println("Open your browser and navigate to http://localhost:"
-							+ port + '/');
+			System.out.println("mqtt.io server started at port " + port + '.');
 
 			ch.closeFuture().sync();
 		} finally {
@@ -52,27 +48,6 @@ public class Server {
 			workerGroup.shutdownGracefully();
 		}
 	}
-
-	// public void run2() {
-	// InternalLoggerFactory.setDefaultFactory(new Log4JLoggerFactory());
-	//
-	// ServerBootstrap bootstrap = new ServerBootstrap(
-	// new NioServerSocketChannelFactory(
-	// Executors.newCachedThreadPool(),
-	// Executors.newCachedThreadPool(), WORKER_COUNT));
-	//
-	// bootstrap.setPipelineFactory(new ChannelPipelineFactory() {
-	//
-	// public ChannelPipeline getPipeline() throws Exception {
-	// return Channels.pipeline(new MqttMessageEncoder(),
-	// new MqttMessageDecoder(), new MessageHandler());
-	// }
-	// });
-	//
-	// bootstrap.setOption("child.tcpNoDelay", true);
-	// bootstrap.setOption("child.keepAlive", true);
-	// bootstrap.bind(new InetSocketAddress(port));
-	// }
 
 	public static void main(String[] args) throws Exception {
 		new Server().run();

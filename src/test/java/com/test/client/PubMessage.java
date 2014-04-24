@@ -1,4 +1,5 @@
 package com.test.client;
+
 import java.io.UnsupportedEncodingException;
 
 import org.eclipse.paho.client.mqttv3.MqttClient;
@@ -10,11 +11,14 @@ public class PubMessage {
 	public static void main(String[] args) throws MqttException,
 			UnsupportedEncodingException {
 
+		String tcpUrl = "tcp://127.0.0.1:1883";
+		String clientId = "pub-msg/client";
 		String topicName = "sub/client1";
 		String message = "Hello Mqtt Server !";
-		String tcpUrl = "tcp://127.0.0.1:8083";
-		String clientId = "pub-msg/client";
+		
+		System.out.println("start...");
 		pubMsg(tcpUrl, clientId, topicName, message);
+		System.out.println("PUB Done!");
 	}
 
 	public static void pubMsg(String tcpUrl, String clientId, String topicName,
@@ -27,7 +31,7 @@ public class PubMessage {
 
 		MqttTopic topic = client.getTopic(topicName);
 		topic.publish(message.getBytes("utf8"), 0, false);
-		
+
 		client.close();
 	}
 }
