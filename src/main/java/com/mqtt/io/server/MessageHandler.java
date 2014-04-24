@@ -48,6 +48,7 @@ public class MessageHandler extends ChannelInboundHandlerAdapter {
 				ctx.channel().close();
 			}
 		} catch (Throwable t) {
+			t.printStackTrace();
 			ctx.channel().close();
 		}
 	}
@@ -75,4 +76,9 @@ public class MessageHandler extends ChannelInboundHandlerAdapter {
 					.addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
 		}
 	}
+	
+    @Override
+    public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
+        ctx.flush();
+    }
 }

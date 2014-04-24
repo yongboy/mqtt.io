@@ -56,11 +56,11 @@ public class ChannelPool {
 		if (topic == null) {
 			return;
 		}
-			channelTopic.put(chn, topic);
-			Channel old = topics.put(topic, chn);
-			if (old != null) {
-				old.close();
-			}
+		channelTopic.put(chn, topic);
+		Channel old = topics.put(topic, chn);
+		if (old != null) {
+			old.close();
+		}
 	}
 
 	public static void removeTopic(Channel chn) {
@@ -73,26 +73,16 @@ public class ChannelPool {
 	public static String getClientId(Channel chn) {
 		return channelClient.get(chn);
 	}
-	
+
 	public static String getTopic(Channel chn) {
 		return channelTopic.get(chn);
 	}
 
 	public static Channel getChannelByTopic(String topic) {
-		if (topic == null || !isToken(topic)) {
+		if (topic == null) {
 			return null;
 		}
 		return topics.get(topic);
-	}
-
-	public static boolean isToken(String topic) {
-		if (topic == null) {
-			return false;
-		}
-		if (topic.length() <= 15) {
-			return false;
-		}
-		return !topic.contains("/");
 	}
 
 	public static int poolSize() {
@@ -110,5 +100,4 @@ public class ChannelPool {
 	public static int topicLocalSize() {
 		return channelTopic.size();
 	}
-
 }

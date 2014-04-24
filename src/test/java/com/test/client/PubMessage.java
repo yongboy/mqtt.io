@@ -32,6 +32,6 @@ public class PubMessage {
 		MqttTopic topic = client.getTopic(topicName);
 		topic.publish(message.getBytes("utf8"), 0, false);
 
-		client.close();
+//		client.close();
 	}
 }
