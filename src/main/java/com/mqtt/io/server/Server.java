@@ -2,15 +2,11 @@ package com.mqtt.io.server;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelPipeline;
+import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 
-import com.mqtt.io.coder.MqttMessageNewDecoder;
-import com.mqtt.io.coder.MqttMessageNewEncoder;
 import com.mqtt.io.tool.ConfigService;
 
 public class Server {
@@ -22,24 +18,18 @@ public class Server {
 	public void run() throws Exception {
 		EventLoopGroup bossGroup = new NioEventLoopGroup(1);
 		EventLoopGroup workerGroup = new NioEventLoopGroup();
+
 		try {
 			ServerBootstrap b = new ServerBootstrap();
 			b.group(bossGroup, workerGroup)
+					.option(ChannelOption.SO_BACKLOG, 1000)
+					.option(ChannelOption.TCP_NODELAY, true)
 					.channel(NioServerSocketChannel.class)
-					.childHandler(new ChannelInitializer<SocketChannel>() {
-						@Override
-						public void initChannel(SocketChannel ch)
-								throws Exception {
-							ChannelPipeline pipeline = ch.pipeline();
-							pipeline.addLast("encoder",
-									new MqttMessageNewEncoder());
-							pipeline.addLast("decoder",
-									new MqttMessageNewDecoder());
-							pipeline.addLast("handler", new MessageHandler());
-						}
-					});
+					.childOption(ChannelOption.SO_KEEPALIVE, true)
+					.childHandler(new TcpChannelInitializer());
 
 			Channel ch = b.bind(port).sync().channel();
+
 			System.out.println("mqtt.io server started at port " + port + '.');
 
 			ch.closeFuture().sync();
