@@ -10,7 +10,9 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import com.mqtt.io.tool.ConfigService;
 
 public class Server {
-	private static int port = ConfigService.getIntProperty("mqtt.port", 1883);
+	private static int port = ConfigService.getIntProperty("tcp.port", 1883);
+	private static int httpPort = ConfigService.getIntProperty("http.port",
+			8080);
 
 	public Server() {
 	}
@@ -20,19 +22,34 @@ public class Server {
 		EventLoopGroup workerGroup = new NioEventLoopGroup();
 
 		try {
-			ServerBootstrap b = new ServerBootstrap();
-			b.group(bossGroup, workerGroup)
+			ServerBootstrap tcp = new ServerBootstrap();
+			tcp.group(bossGroup, workerGroup)
 					.option(ChannelOption.SO_BACKLOG, 1000)
 					.option(ChannelOption.TCP_NODELAY, true)
 					.channel(NioServerSocketChannel.class)
 					.childOption(ChannelOption.SO_KEEPALIVE, true)
 					.childHandler(new TcpChannelInitializer());
 
-			Channel ch = b.bind(port).sync().channel();
+			Channel ch = tcp.bind(port).sync().channel();
 
 			System.out.println("mqtt.io server started at port " + port + '.');
 
 			ch.closeFuture().sync();
+
+			ServerBootstrap websocket = new ServerBootstrap();
+			websocket.group(bossGroup, workerGroup)
+					.option(ChannelOption.SO_BACKLOG, 1000)
+					.option(ChannelOption.TCP_NODELAY, true)
+					.channel(NioServerSocketChannel.class)
+					.childOption(ChannelOption.SO_KEEPALIVE, true)
+					.childHandler(new TcpChannelInitializer());
+
+			Channel webChanel = websocket.bind(httpPort).sync().channel();
+
+			System.out.println("mqtt.io server started at port " + httpPort
+					+ '.');
+
+			webChanel.closeFuture().sync();
 		} finally {
 			bossGroup.shutdownGracefully();
 			workerGroup.shutdownGracefully();

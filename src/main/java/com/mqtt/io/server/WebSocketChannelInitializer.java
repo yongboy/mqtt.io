@@ -7,6 +7,7 @@ import io.netty.handler.codec.http.HttpRequestDecoder;
 import io.netty.handler.codec.http.HttpResponseEncoder;
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 
+import com.mqtt.io.coder.MqttMessageWebSocketFrameEncoder;
 import com.mqtt.io.coder.MqttMessageWebSocketFrameHandler;
 
 public class WebSocketChannelInitializer extends ChannelInitializer<SocketChannel> {
@@ -17,6 +18,7 @@ public class WebSocketChannelInitializer extends ChannelInitializer<SocketChanne
             new HttpRequestDecoder(),
             new HttpObjectAggregator(65536),
             new WebSocketServerProtocolHandler("/websocket"),
+            new MqttMessageWebSocketFrameEncoder(),
             new MqttMessageWebSocketFrameHandler());
     }
 }
