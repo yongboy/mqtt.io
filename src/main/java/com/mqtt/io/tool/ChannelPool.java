@@ -14,7 +14,6 @@ public class ChannelPool {
 			1000000, 0.9f, 256);
 	private final static ConcurrentHashMap<Channel, String> channelClientIdMap = new ConcurrentHashMap<Channel, String>();
 
-	
 	private final static ConcurrentHashMap<String, Set<Channel>> topicChannelMap = new ConcurrentHashMap<String, Set<Channel>>(
 			1000000, 0.9f, 256);
 
@@ -22,7 +21,7 @@ public class ChannelPool {
 
 	private final static ChannelFutureListener clientRemover = new ChannelFutureListener() {
 		public void operationComplete(ChannelFuture future) throws Exception {
-			remove(future.channel());
+			removeChannel(future.channel());
 		}
 	};
 
@@ -37,17 +36,21 @@ public class ChannelPool {
 		channelClientIdMap.put(channel, clientId);
 		Channel oldChannel = cientIdChannelMap.put(clientId, channel);
 		if (oldChannel != null) {
-			remove(oldChannel);
+			removeChannel(oldChannel);
 			oldChannel.close();
 		}
 	}
 
-	public static void remove(Channel chn) {
-		removeTopic(chn);
+	public static void removeChannel(Channel chn) {
+		Set<String> topicSet = channelTopicMap.remove(chn);
+		for (String topic : topicSet) {
+			removeTopic(chn, topic);
+		}
 		String clientId = channelClientIdMap.remove(chn);
 		if (clientId != null) {
 			cientIdChannelMap.remove(clientId, chn);
 		}
+		
 		chn.closeFuture().removeListener(clientRemover);
 	}
 
@@ -58,36 +61,33 @@ public class ChannelPool {
 		if (topic == null) {
 			return;
 		}
-		
+
 		Set<String> topicSet = channelTopicMap.get(chn);
-		if(topicSet == null){
+		if (topicSet == null) {
 			topicSet = new HashSet<String>(1);
 		}
 		topicSet.add(topic);
-		
+
 		channelTopicMap.put(chn, topicSet);
-		
+
 		Set<Channel> channelSet = topicChannelMap.get(topic);
-		if(channelSet == null){
+		if (channelSet == null) {
 			channelSet = new HashSet<Channel>(1);
 		}
 		channelSet.add(chn);
 	}
 
 	public static void removeTopic(Channel chn, String topic) {
-//		String topic = channelTopicMap.remove(chn);
-//		if (topic != null) {
-//			topicChannelMap.remove(topic, chn);
-//		}
+		Set<Channel> channelSet = topicChannelMap.get(topic);
+		channelSet.remove(chn);
+		if (channelSet.isEmpty()) {
+			topicChannelMap.remove(topic);
+		}
 	}
 
 	public static String getClientId(Channel chn) {
 		return channelClientIdMap.get(chn);
 	}
-
-//	public static String getTopic(Channel chn) {
-//		return channelTopicMap.get(chn);
-//	}
 
 	public static Set<Channel> getChannelByTopics(String topic) {
 		if (topic == null) {

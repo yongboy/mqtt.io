@@ -17,9 +17,6 @@ public class ConnectProcesser implements Processer {
 	private static ConnAckMessage UNACCEPTABLE_PROTOCOL_VERSION = new ConnAckMessage(
 			ConnectionStatus.UNACCEPTABLE_PROTOCOL_VERSION);
 
-	private static ConnAckMessage IDENTIFIER_REJECTED = new ConnAckMessage(
-			ConnectionStatus.IDENTIFIER_REJECTED);
-
 	private static ConnAckMessage ACCEPTED = new ConnAckMessage(
 			ConnectionStatus.ACCEPTED);
 
