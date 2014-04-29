@@ -5,6 +5,8 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 
+import java.util.Set;
+
 import org.meqantt.message.DisconnectMessage;
 import org.meqantt.message.Message;
 import org.meqantt.message.PublishMessage;
@@ -30,8 +32,8 @@ public class PublishProcesser implements Processer {
 		}
 
 		PublishMessage pm = (PublishMessage) msg;
-		Channel chn = ChannelPool.getChannelByTopic(pm.getTopic());
-		if (chn != null) {
+		Set<Channel> channels = ChannelPool.getChannelByTopics(pm.getTopic());
+		for (Channel chn : channels) {
 			chn.write(pm).addListener(CLOSE_ON_FAILURE);
 		}
 

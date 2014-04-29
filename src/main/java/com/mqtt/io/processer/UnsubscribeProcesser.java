@@ -17,7 +17,9 @@ public class UnsubscribeProcesser implements Processer {
 		}
 
 		UnsubscribeMessage usm = (UnsubscribeMessage) msg;
-		ChannelPool.removeTopic(ctx.channel());
+		for (String topic : usm.getTopics()) {
+			ChannelPool.removeTopic(ctx.channel(), topic);
+		}
 		UnsubAckMessage usam = new UnsubAckMessage();
 		usam.setMessageId(usm.getMessageId());
 

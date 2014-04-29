@@ -4,19 +4,21 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ChannelPool {
 
-	private final static ConcurrentHashMap<String, Channel> pool = new ConcurrentHashMap<String, Channel>(
-			2000000, 0.9f, 256);
+	private final static ConcurrentHashMap<String, Channel> cientIdChannelMap = new ConcurrentHashMap<String, Channel>(
+			1000000, 0.9f, 256);
+	private final static ConcurrentHashMap<Channel, String> channelClientIdMap = new ConcurrentHashMap<Channel, String>();
 
-	private final static ConcurrentHashMap<String, Channel> topics = new ConcurrentHashMap<String, Channel>(
-			2000000, 0.9f, 256);
+	
+	private final static ConcurrentHashMap<String, Set<Channel>> topicChannelMap = new ConcurrentHashMap<String, Set<Channel>>(
+			1000000, 0.9f, 256);
 
-	private final static ConcurrentHashMap<Channel, String> channelClient = new ConcurrentHashMap<Channel, String>();
-
-	private final static ConcurrentHashMap<Channel, String> channelTopic = new ConcurrentHashMap<Channel, String>();
+	private final static ConcurrentHashMap<Channel, Set<String>> channelTopicMap = new ConcurrentHashMap<Channel, Set<String>>();
 
 	private final static ChannelFutureListener clientRemover = new ChannelFutureListener() {
 		public void operationComplete(ChannelFuture future) throws Exception {
@@ -32,8 +34,8 @@ public class ChannelPool {
 			return;
 		}
 		channel.closeFuture().addListener(clientRemover);
-		channelClient.put(channel, clientId);
-		Channel oldChannel = pool.put(clientId, channel);
+		channelClientIdMap.put(channel, clientId);
+		Channel oldChannel = cientIdChannelMap.put(clientId, channel);
 		if (oldChannel != null) {
 			remove(oldChannel);
 			oldChannel.close();
@@ -42,9 +44,9 @@ public class ChannelPool {
 
 	public static void remove(Channel chn) {
 		removeTopic(chn);
-		String clientId = channelClient.remove(chn);
+		String clientId = channelClientIdMap.remove(chn);
 		if (clientId != null) {
-			pool.remove(clientId, chn);
+			cientIdChannelMap.remove(clientId, chn);
 		}
 		chn.closeFuture().removeListener(clientRemover);
 	}
@@ -56,48 +58,41 @@ public class ChannelPool {
 		if (topic == null) {
 			return;
 		}
-		channelTopic.put(chn, topic);
-		Channel old = topics.put(topic, chn);
-		if (old != null) {
-			old.close();
+		
+		Set<String> topicSet = channelTopicMap.get(chn);
+		if(topicSet == null){
+			topicSet = new HashSet<String>(1);
 		}
+		topicSet.add(topic);
+		
+		channelTopicMap.put(chn, topicSet);
+		
+		Set<Channel> channelSet = topicChannelMap.get(topic);
+		if(channelSet == null){
+			channelSet = new HashSet<Channel>(1);
+		}
+		channelSet.add(chn);
 	}
 
-	public static void removeTopic(Channel chn) {
-		String topic = channelTopic.remove(chn);
-		if (topic != null) {
-			topics.remove(topic, chn);
-		}
+	public static void removeTopic(Channel chn, String topic) {
+//		String topic = channelTopicMap.remove(chn);
+//		if (topic != null) {
+//			topicChannelMap.remove(topic, chn);
+//		}
 	}
 
 	public static String getClientId(Channel chn) {
-		return channelClient.get(chn);
+		return channelClientIdMap.get(chn);
 	}
 
-	public static String getTopic(Channel chn) {
-		return channelTopic.get(chn);
-	}
+//	public static String getTopic(Channel chn) {
+//		return channelTopicMap.get(chn);
+//	}
 
-	public static Channel getChannelByTopic(String topic) {
+	public static Set<Channel> getChannelByTopics(String topic) {
 		if (topic == null) {
 			return null;
 		}
-		return topics.get(topic);
-	}
-
-	public static int poolSize() {
-		return pool.size();
-	}
-
-	public static int topicSize() {
-		return topics.size();
-	}
-
-	public static int clientLocalSize() {
-		return channelClient.size();
-	}
-
-	public static int topicLocalSize() {
-		return channelTopic.size();
+		return topicChannelMap.get(topic);
 	}
 }

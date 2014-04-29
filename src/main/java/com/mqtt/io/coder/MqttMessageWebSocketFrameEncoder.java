@@ -16,12 +16,8 @@ public class MqttMessageWebSocketFrameEncoder extends
 	@Override
 	protected void encode(ChannelHandlerContext ctx, Message msg,
 			List<Object> out) throws Exception {
-//		if(msg == null)
-//			return;
-//		if (!(msg instanceof Message)) {
-//			out.add(msg);
-//			return;
-//		}
+		if (msg == null)
+			return;
 
 		byte[] data = ((Message) msg).toBytes();
 
