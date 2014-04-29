@@ -6,7 +6,7 @@
 <title>MQTT WEBSOCKET DEMO</title>
 <script type="text/javascript" src="js/mqttws31.js"></script>
 <script>
-var client = new Messaging.Client('127.0.0.1', Number(1883), "sub-msg/webclient1");
+var client = new Messaging.Client('localhost', Number(8080), "/websocket", "subscribe/webclient1");
 client.onConnectionLost = onConnectionLost;
 client.onMessageArrived = onMessageArrived;
 client.connect({onSuccess:onConnect, onFailure:onFailure});
@@ -17,7 +17,7 @@ function onFailure(){
 
 function onConnect() {
   console.log("onConnect");
-  client.subscribe("sub/client2");
+  client.subscribe("sub-msg/webclient1");
 }
 
 function onConnectionLost(responseObject) {
@@ -26,11 +26,10 @@ function onConnectionLost(responseObject) {
 }
 
 function onMessageArrived(message) {
-  console.log("onMessageArrived:"+message.payloadString);
-  document.getElementById('log').innerHTML += message.payloadString;
+	console.log("onMessageArrived:"+message.payloadString);
+	document.getElementById('log').innerHTML += message.payloadString;
 }
 </script>
-
 </head>
 
 <body>
