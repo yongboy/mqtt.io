@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.mqtt.io.server.MessageHandler;
+import com.mqtt.io.server.WebSocketMessageHandler;
 
 public class MqttMessageWebSocketFrameHandler extends
 		SimpleChannelInboundHandler<BinaryWebSocketFrame> {

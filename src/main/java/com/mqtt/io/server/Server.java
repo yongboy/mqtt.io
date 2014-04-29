@@ -32,9 +32,8 @@ public class Server {
 
 			Channel ch = tcp.bind(port).sync().channel();
 
-			System.out.println("mqtt.io server started at port " + port + '.');
-
-			ch.closeFuture().sync();
+			System.out.println("mqtt.io tcp server started at port " + port
+					+ '.');
 
 			ServerBootstrap websocket = new ServerBootstrap();
 			websocket.group(bossGroup, workerGroup)
@@ -42,13 +41,14 @@ public class Server {
 					.option(ChannelOption.TCP_NODELAY, true)
 					.channel(NioServerSocketChannel.class)
 					.childOption(ChannelOption.SO_KEEPALIVE, true)
-					.childHandler(new TcpChannelInitializer());
+					.childHandler(new WebSocketChannelInitializer());
 
 			Channel webChanel = websocket.bind(httpPort).sync().channel();
 
-			System.out.println("mqtt.io server started at port " + httpPort
-					+ '.');
+			System.out.println("mqtt.io websocket server started at port "
+					+ httpPort + '.');
 
+			// ch.closeFuture().sync();
 			webChanel.closeFuture().sync();
 		} finally {
 			bossGroup.shutdownGracefully();

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MQTT WEBSOCKET DEMO</title>
+<script type="text/javascript" src="js/mqttws31.js"></script>
+<script>
+var client = new Messaging.Client('127.0.0.1', Number(1883), "sub-msg/webclient1");
+client.onConnectionLost = onConnectionLost;
+client.onMessageArrived = onMessageArrived;
+client.connect({onSuccess:onConnect, onFailure:onFailure});
+
+function onFailure(){
+	console.log("broker connect failed");
+}
+
+function onConnect() {
+  console.log("onConnect");
+  client.subscribe("sub/client2");
+}
+
+function onConnectionLost(responseObject) {
+  if (responseObject.errorCode !== 0)
+    console.log("onConnectionLost:"+responseObject.errorMessage);
+}
+
+function onMessageArrived(message) {
+  console.log("onMessageArrived:"+message.payloadString);
+  document.getElementById('log').innerHTML += message.payloadString;
+}
+</script>
+
+</head>
+
+<body>
+<div id="log"></div>
+<body>
+</html>

@@ -12,13 +12,16 @@ import org.meqantt.message.Message;
 
 @Sharable
 public class MqttMessageWebSocketFrameEncoder extends
-		MessageToMessageEncoder<Object> {
+		MessageToMessageEncoder<Message> {
 	@Override
-	protected void encode(ChannelHandlerContext ctx, Object msg,
+	protected void encode(ChannelHandlerContext ctx, Message msg,
 			List<Object> out) throws Exception {
-		if (!(msg instanceof Message)) {
-			return;
-		}
+//		if(msg == null)
+//			return;
+//		if (!(msg instanceof Message)) {
+//			out.add(msg);
+//			return;
+//		}
 
 		byte[] data = ((Message) msg).toBytes();
 
