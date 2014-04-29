@@ -30,7 +30,7 @@ public class Server {
 					.childOption(ChannelOption.SO_KEEPALIVE, true)
 					.childHandler(new TcpChannelInitializer());
 
-			Channel ch = tcp.bind(port).sync().channel();
+			Channel tcpChannel = tcp.bind(port).sync().channel();
 
 			System.out.println("mqtt.io tcp server started at port " + port
 					+ '.');
@@ -43,13 +43,12 @@ public class Server {
 					.childOption(ChannelOption.SO_KEEPALIVE, true)
 					.childHandler(new WebSocketChannelInitializer());
 
-			Channel webChanel = websocket.bind(httpPort).sync().channel();
+			websocket.bind(httpPort).sync().channel();
 
 			System.out.println("mqtt.io websocket server started at port "
 					+ httpPort + '.');
 
-			// ch.closeFuture().sync();
-			webChanel.closeFuture().sync();
+			tcpChannel.closeFuture().sync();
 		} finally {
 			bossGroup.shutdownGracefully();
 			workerGroup.shutdownGracefully();

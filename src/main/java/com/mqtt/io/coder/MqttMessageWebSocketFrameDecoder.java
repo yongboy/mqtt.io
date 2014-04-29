@@ -10,11 +10,17 @@ import java.util.List;
 public class MqttMessageWebSocketFrameDecoder extends
 		MessageToMessageDecoder<BinaryWebSocketFrame> {
 
+	private MqttMessageNewDecoder messageNewDecoder;
+
+	public MqttMessageWebSocketFrameDecoder() {
+		messageNewDecoder = new MqttMessageNewDecoder();
+	}
+
 	@Override
 	protected void decode(ChannelHandlerContext ctx,
 			BinaryWebSocketFrame wsFrame, List<Object> out) throws Exception {
 		ByteBuf buf = wsFrame.content();
 
-		new MqttMessageNewDecoder().decode(ctx, buf, out);
+		this.messageNewDecoder.decode(ctx, buf, out);
 	}
 }

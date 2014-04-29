@@ -7,22 +7,20 @@ import io.netty.handler.codec.http.HttpRequestDecoder;
 import io.netty.handler.codec.http.HttpResponseEncoder;
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 
-import com.mqtt.io.coder.MqttMessageNewDecoder;
+import com.mqtt.io.coder.MqttMessageWebSocketFrameDecoder;
 import com.mqtt.io.coder.MqttMessageWebSocketFrameEncoder;
-import com.mqtt.io.coder.MqttMessageWebSocketFrameHandler;
 
-public class WebSocketChannelInitializer extends ChannelInitializer<SocketChannel> {
-    @Override
-    public void initChannel(final SocketChannel ch) throws Exception {
-        ch.pipeline().addLast(
-            new HttpResponseEncoder(),
-            new MqttMessageWebSocketFrameEncoder(),
-            new HttpRequestDecoder(),
-            new HttpObjectAggregator(65536),
-            new WebSocketServerProtocolHandler("/websocket"),
-            new MqttMessageNewDecoder(),
-//            new MessageHandler(),
-            new MqttMessageWebSocketFrameHandler()
-          );
-    }
+public class WebSocketChannelInitializer extends
+		ChannelInitializer<SocketChannel> {
+	@Override
+	public void initChannel(final SocketChannel ch) throws Exception {
+		ch.pipeline().addLast(
+				new HttpResponseEncoder(),
+				new MqttMessageWebSocketFrameEncoder(),
+				new HttpRequestDecoder(), 
+				new HttpObjectAggregator(65536),
+				new WebSocketServerProtocolHandler("/websocket"),
+				new MqttMessageWebSocketFrameDecoder(), 
+				new MessageHandler());
+	}
 }
