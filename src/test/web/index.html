@@ -6,33 +6,36 @@
 <title>MQTT WEBSOCKET DEMO</title>
 <script type="text/javascript" src="js/mqttws31.js"></script>
 <script>
-var client = new Messaging.Client('localhost', Number(8080), "/websocket", "subscribe/webclient1");
-client.onConnectionLost = onConnectionLost;
-client.onMessageArrived = onMessageArrived;
-client.connect({onSuccess:onConnect, onFailure:onFailure});
+	var client = new Messaging.Client('localhost', Number(8080), "/websocket",
+			"subscribe/webclient1");
+	client.onConnectionLost = onConnectionLost;
+	client.onMessageArrived = onMessageArrived;
+	client.connect({
+		onSuccess : onConnect,
+		onFailure : onFailure
+	});
 
-function onFailure(){
-	console.log("broker connect failed");
-}
+	function onFailure() {
+		console.log("broker connect failed");
+	}
 
-function onConnect() {
-  console.log("onConnect");
-  client.subscribe("sub-msg/webclient1");
-}
+	function onConnect() {
+		console.log("onConnect");
+		client.subscribe("sub-msg/webclient1");
+	}
 
-function onConnectionLost(responseObject) {
-  if (responseObject.errorCode !== 0)
-    console.log("onConnectionLost:"+responseObject.errorMessage);
-}
+	function onConnectionLost(responseObject) {
+		if (responseObject.errorCode !== 0)
+			console.log("onConnectionLost:" + responseObject.errorMessage);
+	}
 
-function onMessageArrived(message) {
-	console.log("onMessageArrived:"+message.payloadString);
-	document.getElementById('log').innerHTML += message.payloadString;
-}
+	function onMessageArrived(message) {
+		console.log("onMessageArrived:" + message.payloadString);
+		document.getElementById('log').innerHTML += message.payloadString;
+	}
 </script>
 </head>
-
 <body>
-<div id="log"></div>
+	<div id="log"></div>
 <body>
 </html>
