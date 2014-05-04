@@ -11,7 +11,7 @@ import org.meqantt.message.DisconnectMessage;
 import org.meqantt.message.Message;
 import org.meqantt.message.PublishMessage;
 
-import com.mqtt.io.tool.ChannelPool;
+import com.mqtt.io.tool.MemPool;
 
 public class PublishProcesser implements Processer {
 
@@ -26,13 +26,13 @@ public class PublishProcesser implements Processer {
 	};
 
 	public Message proc(Message msg, ChannelHandlerContext ctx) {
-		String clientId = ChannelPool.getClientId(ctx.channel());
+		String clientId = MemPool.getClientId(ctx.channel());
 		if (clientId == null) {
 			return DISCONNECT;
 		}
 
 		PublishMessage pm = (PublishMessage) msg;
-		Set<Channel> channels = ChannelPool.getChannelByTopics(pm.getTopic());
+		Set<Channel> channels = MemPool.getChannelByTopics(pm.getTopic());
 		if (channels != null) {
 			for (Channel chn : channels) {
 				chn.writeAndFlush(pm).addListener(CLOSE_ON_FAILURE);

@@ -8,7 +8,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class ChannelPool {
+public class MemPool {
 
 	private final static ConcurrentHashMap<String, Channel> cientIdChannelMap = new ConcurrentHashMap<String, Channel>(
 			1000000, 0.9f, 256);
@@ -25,7 +25,7 @@ public class ChannelPool {
 		}
 	};
 
-	public static void put(Channel channel, String clientId) {
+	public static void putClienId(Channel channel, String clientId) {
 		if (channel == null) {
 			return;
 		}
@@ -43,17 +43,17 @@ public class ChannelPool {
 
 	public static void removeChannel(Channel chn) {
 		Set<String> topicSet = channelTopicMap.remove(chn);
-		if(topicSet != null){
+		if (topicSet != null) {
 			for (String topic : topicSet) {
 				removeTopic(chn, topic);
 			}
 		}
-		
+
 		String clientId = channelClientIdMap.remove(chn);
 		if (clientId != null) {
 			cientIdChannelMap.remove(clientId, chn);
 		}
-		
+
 		chn.closeFuture().removeListener(clientRemover);
 	}
 
@@ -78,7 +78,7 @@ public class ChannelPool {
 			channelSet = new HashSet<Channel>(1);
 		}
 		channelSet.add(chn);
-		
+
 		topicChannelMap.put(topic, channelSet);
 	}
 

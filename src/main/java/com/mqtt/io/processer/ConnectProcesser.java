@@ -10,7 +10,7 @@ import org.meqantt.message.ConnAckMessage.ConnectionStatus;
 import org.meqantt.message.ConnectMessage;
 import org.meqantt.message.Message;
 
-import com.mqtt.io.tool.ChannelPool;
+import com.mqtt.io.tool.MemPool;
 
 public class ConnectProcesser implements Processer {
 
@@ -32,7 +32,7 @@ public class ConnectProcesser implements Processer {
 		ctx.pipeline().addFirst("readTimeOutHandler",
 				new ReadTimeoutHandler(timeout, TimeUnit.SECONDS));
 
-		ChannelPool.put(ctx.channel(), cm.getClientId());
+		MemPool.putClienId(ctx.channel(), cm.getClientId());
 
 		return ACCEPTED;
 	}

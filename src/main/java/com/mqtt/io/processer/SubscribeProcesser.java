@@ -8,14 +8,14 @@ import org.meqantt.message.QoS;
 import org.meqantt.message.SubAckMessage;
 import org.meqantt.message.SubscribeMessage;
 
-import com.mqtt.io.tool.ChannelPool;
+import com.mqtt.io.tool.MemPool;
 
 public class SubscribeProcesser implements Processer {
 
 	private static DisconnectMessage DISCONNECT = new DisconnectMessage();
 
 	public Message proc(Message msg, ChannelHandlerContext ctx) {
-		String clientId = ChannelPool.getClientId(ctx.channel());
+		String clientId = MemPool.getClientId(ctx.channel());
 		if (clientId == null) {
 			return DISCONNECT;
 		}
@@ -26,7 +26,7 @@ public class SubscribeProcesser implements Processer {
 		if (sm.getTopics() != null) {
 			for (String topic : sm.getTopics()) {
 				sam.addQoS(QoS.AT_MOST_ONCE);
-				ChannelPool.putTopic(ctx.channel(), topic);
+				MemPool.putTopic(ctx.channel(), topic);
 			}
 		}
 
