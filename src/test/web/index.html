@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>MQTT WEBSOCKET DEMO</title>
 <script type="text/javascript" src="js/mqttws31.js"></script>
+<script src="http://libs.baidu.com/jquery/1.9.0/jquery.js"></script>
 <script>
 	var client = new Messaging.Client('localhost', Number(8080), "/websocket",
 			"subscribe/webclient1");
@@ -16,22 +17,25 @@
 	});
 
 	function onFailure() {
-		console.log("broker connect failed");
+		log("broker connect failed");
 	}
 
 	function onConnect() {
-		console.log("onConnect");
+		log("onConnect");
 		client.subscribe("sub-msg/webclient1");
 	}
 
 	function onConnectionLost(responseObject) {
 		if (responseObject.errorCode !== 0)
-			console.log("onConnectionLost:" + responseObject.errorMessage);
+			log("onConnectionLost:" + responseObject.errorMessage);
 	}
 
 	function onMessageArrived(message) {
-		console.log("onMessageArrived:" + message.payloadString);
-		document.getElementById('log').innerHTML += message.payloadString;
+		log("onMessageArrived:" + message.payloadString);
+	}
+	
+	function log(val){
+		$("#log").html(val + "<br/>" + $("#log").html());
 	}
 </script>
 </head>

@@ -33,8 +33,10 @@ public class PublishProcesser implements Processer {
 
 		PublishMessage pm = (PublishMessage) msg;
 		Set<Channel> channels = ChannelPool.getChannelByTopics(pm.getTopic());
-		for (Channel chn : channels) {
-			chn.write(pm).addListener(CLOSE_ON_FAILURE);
+		if (channels != null) {
+			for (Channel chn : channels) {
+				chn.writeAndFlush(pm).addListener(CLOSE_ON_FAILURE);
+			}
 		}
 
 		return null;

@@ -43,9 +43,12 @@ public class ChannelPool {
 
 	public static void removeChannel(Channel chn) {
 		Set<String> topicSet = channelTopicMap.remove(chn);
-		for (String topic : topicSet) {
-			removeTopic(chn, topic);
+		if(topicSet != null){
+			for (String topic : topicSet) {
+				removeTopic(chn, topic);
+			}
 		}
+		
 		String clientId = channelClientIdMap.remove(chn);
 		if (clientId != null) {
 			cientIdChannelMap.remove(clientId, chn);
@@ -75,6 +78,8 @@ public class ChannelPool {
 			channelSet = new HashSet<Channel>(1);
 		}
 		channelSet.add(chn);
+		
+		topicChannelMap.put(topic, channelSet);
 	}
 
 	public static void removeTopic(Channel chn, String topic) {
