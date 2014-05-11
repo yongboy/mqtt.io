@@ -22,6 +22,7 @@ public class Server {
 		EventLoopGroup workerGroup = new NioEventLoopGroup();
 
 		try {
+			/*
 			ServerBootstrap tcp = new ServerBootstrap();
 			tcp.group(bossGroup, workerGroup)
 					.option(ChannelOption.SO_BACKLOG, 1000)
@@ -34,7 +35,7 @@ public class Server {
 
 			System.out.println("mqtt.io tcp server started at port " + port
 					+ '.');
-
+			*/
 			ServerBootstrap websocket = new ServerBootstrap();
 			websocket.group(bossGroup, workerGroup)
 					.option(ChannelOption.SO_BACKLOG, 1000)
@@ -43,13 +44,14 @@ public class Server {
 					.childOption(ChannelOption.SO_KEEPALIVE, true)
 					.childHandler(new WebSocketChannelInitializer());
 
-			websocket.bind(httpPort).sync().channel();
+			Channel httpChannel = websocket.bind(httpPort).sync().channel();
 
 			System.out.println("mqtt.io websocket server started at port "
 					+ httpPort + '.');
 
-			tcpChannel.closeFuture().sync();
+			httpChannel.closeFuture().sync();
 		} finally {
+			System.out.println("colse!");
 			bossGroup.shutdownGracefully();
 			workerGroup.shutdownGracefully();
 		}

@@ -28,6 +28,7 @@ public class ConnectProcesser implements Processer {
 		}
 
 		int timeout = (int) Math.ceil(cm.getKeepAlive() * 1.5);
+		System.out.println("timeout is " + timeout);
 
 		ctx.pipeline().addFirst("readTimeOutHandler",
 				new ReadTimeoutHandler(timeout, TimeUnit.SECONDS));

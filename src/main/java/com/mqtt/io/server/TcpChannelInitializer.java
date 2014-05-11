@@ -4,8 +4,9 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
 
-import com.mqtt.io.coder.MqttMessageNewDecoder;
-import com.mqtt.io.coder.MqttMessageNewEncoder;
+import com.mqtt.io.handler.MessageHandler;
+import com.mqtt.io.handler.coder.MqttMessageNewDecoder;
+import com.mqtt.io.handler.coder.MqttMessageNewEncoder;
 
 public class TcpChannelInitializer extends ChannelInitializer<SocketChannel> {
 	

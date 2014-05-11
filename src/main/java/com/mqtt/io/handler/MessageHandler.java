@@ -1,4 +1,4 @@
-package com.mqtt.io.server;
+package com.mqtt.io.handler;
 
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
@@ -26,7 +26,7 @@ import com.mqtt.io.processer.UnsubscribeProcesser;
 public class MessageHandler extends ChannelInboundHandlerAdapter {
 	private static PingRespMessage PINGRESP = new PingRespMessage();
 
-	public static Map<Message.Type, Processer> processers = new HashMap<Message.Type, Processer>();
+	public static Map<Message.Type, Processer> processers = new HashMap<Message.Type, Processer>(6);
 
 	static {
 		processers.put(Type.CONNECT, new ConnectProcesser());
