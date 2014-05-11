@@ -21,18 +21,15 @@ public class FlashSecurityHandler extends ChannelInboundHandlerAdapter {
 			.getLogger(FlashSecurityHandler.class);
 	private static ByteBuf channelBuffer = Unpooled
 			.copiedBuffer(
-					"<?xml version=\"1.0\"?>"
-							+ "<!DOCTYPE cross-domain-policy SYSTEM \"/xml/dtds/cross-domain-policy.dtd\">"
-							+ "<cross-domain-policy> "
-							+ "   <site-control permitted-cross-domain-policies=\"master-only\"/>"
+							"<cross-domain-policy>"
 							+ "   <allow-access-from domain=\"*\" to-ports=\"*\" />"
 							+ "</cross-domain-policy>", CharsetUtil.UTF_8);
 
 	@Override
 	public void channelRead(ChannelHandlerContext ctx, Object obj)
 			throws Exception {
-		ChannelFuture f = ctx.writeAndFlush(channelBuffer);
-		f.addListener(ChannelFutureListener.CLOSE);
+		ctx.writeAndFlush(channelBuffer).addListener(
+				ChannelFutureListener.CLOSE);
 	}
 
 	@Override

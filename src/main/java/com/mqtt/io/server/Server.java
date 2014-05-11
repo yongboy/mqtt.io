@@ -14,7 +14,7 @@ public class Server {
 	private static int httpPort = ConfigService.getIntProperty("http.port",
 			8080);
 	private static int flashPolicyPort = ConfigService.getIntProperty(
-			"flash.policy.port", 18443);
+			"flash.policy.port", 843);
 
 	public Server() {
 	}
@@ -50,13 +50,16 @@ public class Server {
 			System.out.println("mqtt.io websocket server started at port "
 					+ httpPort + '.');
 
-			ServerBootstrap flashpolicy = new ServerBootstrap();
-			flashpolicy.group(bossGroup, workerGroup)
-					.option(ChannelOption.TCP_NODELAY, true)
-					.channel(NioServerSocketChannel.class)
-					.childHandler(new FlashPolicyChannelInitializer());
-
-			flashpolicy.bind(flashPolicyPort).sync().channel();
+//			ServerBootstrap flashpolicy = new ServerBootstrap();
+//			flashpolicy.group(bossGroup, workerGroup)
+//					.option(ChannelOption.TCP_NODELAY, true)
+//					.channel(NioServerSocketChannel.class)
+//					.childHandler(new FlashPolicyChannelInitializer());
+//
+//			flashpolicy.bind(flashPolicyPort).sync().channel();
+//			
+//			System.out.println("mqtt.io flash policy server started at port "
+//					+ flashPolicyPort + '.');
 
 			tcpChannel.closeFuture().sync();
 		} finally {
