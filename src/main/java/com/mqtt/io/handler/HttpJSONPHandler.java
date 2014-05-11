@@ -23,11 +23,14 @@ import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponse;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.QueryStringDecoder;
 import io.netty.handler.codec.http.ServerCookieEncoder;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.util.AttributeKey;
 import io.netty.util.CharsetUtil;
+import io.netty.util.internal.logging.InternalLogger;
+import io.netty.util.internal.logging.InternalLoggerFactory;
 
 import java.util.List;
 import java.util.Map;
@@ -35,14 +38,17 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
 
 import org.apache.commons.lang3.StringUtils;
 
 public class HttpJSONPHandler {
-	private static final Logger log = Logger.getLogger(HttpJSONPHandler.class
-			.getName());
+	private static final InternalLogger logger = InternalLoggerFactory
+			.getInstance(HttpJSONPHandler.class);
 
+	private final static ConcurrentHashMap<String, Object> sessionMap = new ConcurrentHashMap<String, Object>(
+			100000, 0.9f, 256);
+
+	// Global Identiter/È«¾ÖÎ¨Ò»
 	private static final AttributeKey<HttpRequest> key = AttributeKey
 			.valueOf("req");
 
@@ -53,8 +59,8 @@ public class HttpJSONPHandler {
 	}
 
 	@SuppressWarnings("static-access")
-	protected void handleHttpRequest(ChannelHandlerContext ctx, FullHttpRequest req)
-			throws Exception {
+	protected void handleHttpRequest(ChannelHandlerContext ctx,
+			FullHttpRequest req) throws Exception {
 		// Handle a bad request.
 		if (!req.getDecoderResult().isSuccess()) {
 			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1,
@@ -94,25 +100,22 @@ public class HttpJSONPHandler {
 			handleUnsubscrible(ctx, req);
 			return;
 		} else if (req.getUri().contains("/jsonp/publish")) {
-			handlePublish(ctx, req);
-			return;
+			// HttpResponseStatus
+			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1,
+					HttpResponseStatus.FORBIDDEN));
 		} else { // invalid request
 			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1,
 					BAD_REQUEST));
 		}
 	}
 
-	private void handlePublish(ChannelHandlerContext ctx, HttpRequest req) {
-		
-	}
-
 	private void handleUnsubscrible(ChannelHandlerContext ctx, HttpRequest req) {
-
+		// TODO code here...
 	}
 
 	public void handleTimeout(ChannelHandlerContext ctx) {
-		ByteBuf content = Unpooled.copiedBuffer("hello world !!!",
-				CharsetUtil.UTF_8);
+		// empty json
+		ByteBuf content = Unpooled.copiedBuffer("{}", CharsetUtil.UTF_8);
 		ctx.channel().writeAndFlush(content)
 				.addListener(ChannelFutureListener.CLOSE);
 	}
@@ -169,7 +172,7 @@ public class HttpJSONPHandler {
 			return;
 		}
 
-		log.info("topic = " + topic + " qos = " + qos);
+		logger.debug("topic = " + topic + " qos = " + qos);
 
 		ByteBuf content = Unpooled.wrappedBuffer("{status:true}".getBytes());
 		FullHttpResponse res = new DefaultFullHttpResponse(HTTP_1_1, OK,
@@ -203,9 +206,6 @@ public class HttpJSONPHandler {
 		return uriAttributes.containsKey(name) ? uriAttributes.get(name).get(0)
 				: null;
 	}
-
-	private final static ConcurrentHashMap<String, Object> sessionMap = new ConcurrentHashMap<String, Object>(
-			100000, 0.9f, 256);
 
 	private static String genJSessionId() {
 		return UUID.randomUUID().toString();
