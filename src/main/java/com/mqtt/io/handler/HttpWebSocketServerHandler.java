@@ -20,6 +20,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.FullHttpRequest;
+import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.websocketx.CloseWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.PingWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.PongWebSocketFrame;
@@ -37,7 +38,7 @@ import com.mqtt.io.handler.coder.MqttMessageNewDecoder;
 /**
  * Handles handshakes and messages
  */
-public class CustomWebSocketServerHandler extends
+public class HttpWebSocketServerHandler extends
 		SimpleChannelInboundHandler<Object> {
 	protected static final String WEBSOCKET_PATH = "/websocket";
 
@@ -47,7 +48,7 @@ public class CustomWebSocketServerHandler extends
 
 	private HttpJSONPHandler httpJSONPHandler;
 
-	public CustomWebSocketServerHandler() {
+	public HttpWebSocketServerHandler() {
 		this.messageNewDecoder = new MqttMessageNewDecoder();
 		this.messageHandler = new MessageHandler();
 		this.httpJSONPHandler = new HttpJSONPHandler(this);
@@ -58,6 +59,7 @@ public class CustomWebSocketServerHandler extends
 			throws Exception {
 		if (msg instanceof FullHttpRequest) {
 			this.httpJSONPHandler.handleHttpRequest(ctx, (FullHttpRequest) msg);
+			return;
 		} else if (msg instanceof WebSocketFrame) {
 			handleWebSocketFrame(ctx, (WebSocketFrame) msg);
 		}
@@ -113,12 +115,12 @@ public class CustomWebSocketServerHandler extends
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
 			throws Exception {
-        if (cause instanceof ReadTimeoutException) {
-            this.httpJSONPHandler.handleTimeout(ctx);
-        } else {
-    		cause.printStackTrace();
-    		ctx.close();
-        }
+		if (cause instanceof ReadTimeoutException) {
+			this.httpJSONPHandler.handleTimeout(ctx);
+		} else {
+			cause.printStackTrace();
+			ctx.close();
+		}
 	}
 
 	private static String getWebSocketLocation(FullHttpRequest req) {

@@ -10,7 +10,6 @@ import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -18,16 +17,18 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.Cookie;
 import io.netty.handler.codec.http.CookieDecoder;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
+import io.netty.handler.codec.http.DefaultHttpResponse;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpHeaders;
+import io.netty.handler.codec.http.HttpRequest;
+import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.QueryStringDecoder;
 import io.netty.handler.codec.http.ServerCookieEncoder;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.util.AttributeKey;
 import io.netty.util.CharsetUtil;
 
-import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -41,17 +42,19 @@ import org.apache.commons.lang3.StringUtils;
 public class HttpJSONPHandler {
 	private static final Logger log = Logger.getLogger(HttpJSONPHandler.class
 			.getName());
-	private CustomWebSocketServerHandler webSocketServerHandler;
-	private final AttributeKey<FullHttpRequest> key = AttributeKey
+
+	private static final AttributeKey<HttpRequest> key = AttributeKey
 			.valueOf("req");
 
-	public HttpJSONPHandler(CustomWebSocketServerHandler webSocketServerHandler) {
+	private HttpWebSocketServerHandler webSocketServerHandler;
+
+	public HttpJSONPHandler(HttpWebSocketServerHandler webSocketServerHandler) {
 		this.webSocketServerHandler = webSocketServerHandler;
 	}
 
 	@SuppressWarnings("static-access")
-	protected void handleHttpRequest(ChannelHandlerContext ctx,
-			FullHttpRequest req) throws Exception {
+	protected void handleHttpRequest(ChannelHandlerContext ctx, FullHttpRequest req)
+			throws Exception {
 		// Handle a bad request.
 		if (!req.getDecoderResult().isSuccess()) {
 			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1,
@@ -97,89 +100,48 @@ public class HttpJSONPHandler {
 			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1,
 					BAD_REQUEST));
 		}
-
-		// // Send the demo page and favicon.ico
-		// ByteBuf content = Unpooled.wrappedBuffer("Hello World".getBytes());
-		// FullHttpResponse res = new DefaultFullHttpResponse(HTTP_1_1, OK,
-		// content);
-		//
-		// res.headers().set(CONTENT_TYPE, "text/html; charset=UTF-8");
-		// setContentLength(res, content.readableBytes());
-		//
-		// sendHttpResponse(ctx, req, res);
 	}
 
-	private void handlePublish(ChannelHandlerContext ctx, FullHttpRequest req) {
-		// TODO Auto-generated method stub
-
+	private void handlePublish(ChannelHandlerContext ctx, HttpRequest req) {
+		
 	}
 
-	private void handleUnsubscrible(ChannelHandlerContext ctx,
-			FullHttpRequest req) {
-		// TODO Auto-generated method stub
+	private void handleUnsubscrible(ChannelHandlerContext ctx, HttpRequest req) {
 
 	}
 
 	public void handleTimeout(ChannelHandlerContext ctx) {
-//		ByteBuf content = ctx
-//				.channel()
-//				.alloc()
-//				.ioBuffer()
-//				.writeBytes(
-//						"\r\n\r\n<script>alert('hello!');</script>\r\n\r\n"
-//								.getBytes());
-		System.out.println("gose here ...");
-		ctx.channel().close();
-//		ByteBuf content = null;
-//		try {
-//			content = Unpooled.wrappedBuffer("\r\n\r\n<script>alert('hello!');</script>\r\n\r\n".getBytes("UTF-8"));
-//		} catch (UnsupportedEncodingException e) {
-//			e.printStackTrace();
-//		}
-//		if (ctx.channel().isOpen()) {
-//			ctx.channel().writeAndFlush(content)
-//					.addListener(ChannelFutureListener.CLOSE);
-//		}
+		ByteBuf content = Unpooled.copiedBuffer("hello world !!!",
+				CharsetUtil.UTF_8);
+		ctx.channel().writeAndFlush(content)
+				.addListener(ChannelFutureListener.CLOSE);
 	}
 
-	private void handleWaitingMsg(ChannelHandlerContext ctx, FullHttpRequest req) {
-//		if (!checkJSessionId(req)) {
-//			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1,
-//					BAD_REQUEST));
-//			return;
-//		}
-
+	private void handleWaitingMsg(ChannelHandlerContext ctx, HttpRequest req) {
+		if (!checkJSessionId(req)) {
+			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1,
+					BAD_REQUEST));
+			return;
+		}
 		ctx.attr(key).set(req);
-		ctx.pipeline().addFirst(new ReadTimeoutHandler(5, TimeUnit.SECONDS));
 
-		FullHttpResponse res = new DefaultFullHttpResponse(HTTP_1_1, OK);
-		res.headers().add(CONTENT_TYPE, "text/html; charset=UTF-8");
-		res.headers().add(HttpHeaders.Names.CONNECTION,
+		HttpResponse res = new DefaultHttpResponse(HTTP_1_1, OK);
+		res.headers().set(CONTENT_TYPE, "text/html; charset=UTF-8");
+		res.headers().set(HttpHeaders.Names.CONNECTION,
 				HttpHeaders.Values.KEEP_ALIVE);
-//		res.headers().add("X-XSS-Protection", "0");
+		res.headers().set("X-XSS-Protection", "0");
 
-//		if (req != null && req.headers().get("Origin") != null) {
-//			res.headers().add("Access-Control-Allow-Origin",
-//					req.headers().get("Origin"));
-//			res.headers().add("Access-Control-Allow-Credentials", "true");
-//		}
+		if (req != null && req.headers().get("Origin") != null) {
+			res.headers().set("Access-Control-Allow-Origin",
+					req.headers().get("Origin"));
+			res.headers().set("Access-Control-Allow-Credentials", "true");
+		}
 
 		ctx.channel().write(res);
-		
-		
-		ByteBuf content = null;
-		try {
-			content = Unpooled.wrappedBuffer("\r\n\r\n<script>alert('hello!');</script>\r\n\r\n".getBytes("UTF-8"));
-		} catch (UnsupportedEncodingException e) {
-			e.printStackTrace();
-		}
-		ctx.channel().writeAndFlush(content);
-		ctx.channel().close();
-
-		// TODO 处理异常断开
+		ctx.pipeline().addFirst(new ReadTimeoutHandler(5, TimeUnit.SECONDS));
 	}
 
-	private void handleSubscrible(ChannelHandlerContext ctx, FullHttpRequest req) {
+	private void handleSubscrible(ChannelHandlerContext ctx, HttpRequest req) {
 		if (!checkJSessionId(req)) {
 			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1,
 					BAD_REQUEST));
@@ -188,11 +150,12 @@ public class HttpJSONPHandler {
 
 		String topic = getParameter(req, "topic");
 		String qosStr = getParameter(req, "qos");
-		if (StringUtils.isEmpty(topic)) {
+		if (StringUtils.isNotEmpty(topic)) {
 			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1,
 					BAD_REQUEST));
 			return;
 		}
+
 		int qos = 0;
 		if (StringUtils.isNumeric(qosStr)) {
 			try {
@@ -217,7 +180,7 @@ public class HttpJSONPHandler {
 		sendHttpResponse(ctx, req, res);
 	}
 
-	private void handleConnect(ChannelHandlerContext ctx, FullHttpRequest req) {
+	private void handleConnect(ChannelHandlerContext ctx, HttpRequest req) {
 		ByteBuf content = Unpooled.wrappedBuffer("{status:true}".getBytes());
 		FullHttpResponse res = new DefaultFullHttpResponse(HTTP_1_1, OK,
 				content);
@@ -233,7 +196,7 @@ public class HttpJSONPHandler {
 		sendHttpResponse(ctx, req, res);
 	}
 
-	private String getParameter(FullHttpRequest req, String name) {
+	private String getParameter(HttpRequest req, String name) {
 		QueryStringDecoder decoderQuery = new QueryStringDecoder(req.getUri());
 		Map<String, List<String>> uriAttributes = decoderQuery.parameters();
 
@@ -248,17 +211,17 @@ public class HttpJSONPHandler {
 		return UUID.randomUUID().toString();
 	}
 
-	private boolean checkJSessionId(FullHttpRequest req) {
+	private boolean checkJSessionId(HttpRequest req) {
 		String jsessionId = getClientJSessionId(req);
 
-		if (StringUtils.isBlank(jsessionId)) {
+		if (jsessionId != null) {
 			return false;
 		}
 
 		return sessionMap.containsKey(jsessionId);
 	}
 
-	private String getClientJSessionId(FullHttpRequest req) {
+	private String getClientJSessionId(HttpRequest req) {
 		Set<Cookie> cookies;
 		String value = req.headers().get(HttpHeaders.Names.COOKIE);
 		if (value == null) {
@@ -277,7 +240,7 @@ public class HttpJSONPHandler {
 	}
 
 	private static void sendHttpResponse(ChannelHandlerContext ctx,
-			FullHttpRequest req, FullHttpResponse res) {
+			HttpRequest req, FullHttpResponse res) {
 		// Generate an error page if response getStatus code is not OK (200).
 		if (res.getStatus().code() != 200) {
 			ByteBuf buf = Unpooled.copiedBuffer(res.getStatus().toString(),
