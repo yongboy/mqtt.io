@@ -11,6 +11,7 @@ public class HttpChannelInitializer extends
 		ChannelInitializer<SocketChannel> {
 	@Override
 	public void initChannel(final SocketChannel ch) throws Exception {
+		// just support websocket
 		// ch.pipeline().addLast(
 		// new HttpResponseEncoder(),
 		// new MqttMessageWebSocketFrameEncoder(),
