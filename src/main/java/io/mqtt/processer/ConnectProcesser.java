@@ -1,5 +1,6 @@
-package com.mqtt.io.processer;
+package io.mqtt.processer;
 
+import io.mqtt.tool.MemPool;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 
@@ -9,8 +10,6 @@ import org.meqantt.message.ConnAckMessage;
 import org.meqantt.message.ConnAckMessage.ConnectionStatus;
 import org.meqantt.message.ConnectMessage;
 import org.meqantt.message.Message;
-
-import com.mqtt.io.tool.MemPool;
 
 public class ConnectProcesser implements Processer {
 

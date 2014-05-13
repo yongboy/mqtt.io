@@ -1,5 +1,6 @@
 target/
 bin/
+.settings/
 .classpath
 .project
 pub-*

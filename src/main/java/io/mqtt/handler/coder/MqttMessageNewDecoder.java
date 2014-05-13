@@ -1,4 +1,4 @@
-package com.mqtt.io.handler.coder;
+package io.mqtt.handler.coder;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;

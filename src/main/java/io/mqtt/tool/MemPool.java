@@ -1,5 +1,6 @@
-package com.mqtt.io.tool;
+package io.mqtt.tool;
 
+import io.mqtt.handler.entity.ChannelEntity;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -14,10 +15,10 @@ public class MemPool {
 			1000000, 0.9f, 256);
 	private final static ConcurrentHashMap<Channel, String> channelClientIdMap = new ConcurrentHashMap<Channel, String>();
 
-	private final static ConcurrentHashMap<String, Set<Channel>> topicChannelMap = new ConcurrentHashMap<String, Set<Channel>>(
+	private final static ConcurrentHashMap<String, Set<ChannelEntity>> topicChannelMap = new ConcurrentHashMap<String, Set<ChannelEntity>>(
 			1000000, 0.9f, 256);
 
-	private final static ConcurrentHashMap<Channel, Set<String>> channelTopicMap = new ConcurrentHashMap<Channel, Set<String>>();
+	private final static ConcurrentHashMap<ChannelEntity, Set<String>> channelTopicMap = new ConcurrentHashMap<ChannelEntity, Set<String>>();
 
 	private final static ChannelFutureListener clientRemover = new ChannelFutureListener() {
 		public void operationComplete(ChannelFuture future) throws Exception {
@@ -57,7 +58,7 @@ public class MemPool {
 		chn.closeFuture().removeListener(clientRemover);
 	}
 
-	public static void putTopic(Channel chn, String topic) {
+	public static void putTopic(ChannelEntity chn, String topic) {
 		if (chn == null) {
 			return;
 		}
@@ -73,9 +74,9 @@ public class MemPool {
 
 		channelTopicMap.put(chn, topicSet);
 
-		Set<Channel> channelSet = topicChannelMap.get(topic);
+		Set<ChannelEntity> channelSet = topicChannelMap.get(topic);
 		if (channelSet == null) {
-			channelSet = new HashSet<Channel>(1);
+			channelSet = new HashSet<ChannelEntity>(1);
 		}
 		channelSet.add(chn);
 
@@ -83,7 +84,7 @@ public class MemPool {
 	}
 
 	public static void removeTopic(Channel chn, String topic) {
-		Set<Channel> channelSet = topicChannelMap.get(topic);
+		Set<ChannelEntity> channelSet = topicChannelMap.get(topic);
 		channelSet.remove(chn);
 		if (channelSet.isEmpty()) {
 			topicChannelMap.remove(topic);
@@ -94,7 +95,7 @@ public class MemPool {
 		return channelClientIdMap.get(chn);
 	}
 
-	public static Set<Channel> getChannelByTopics(String topic) {
+	public static Set<ChannelEntity> getChannelByTopics(String topic) {
 		if (topic == null) {
 			return null;
 		}

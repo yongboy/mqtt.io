@@ -1,4 +1,4 @@
-package com.mqtt.io.tool;
+package io.mqtt.tool;
 
 import java.io.IOException;
 import java.io.InputStream;

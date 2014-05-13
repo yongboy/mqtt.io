@@ -1,4 +1,4 @@
-package com.mqtt.io.handler.coder;
+package io.mqtt.handler.coder;
 
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandler.Sharable;

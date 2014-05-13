@@ -1,4 +1,4 @@
-package com.mqtt.io.handler;
+package io.mqtt.handler;
 
 import static io.netty.handler.codec.http.HttpHeaders.isKeepAlive;
 import static io.netty.handler.codec.http.HttpHeaders.setContentLength;
@@ -9,6 +9,8 @@ import static io.netty.handler.codec.http.HttpResponseStatus.FORBIDDEN;
 import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
+import io.mqtt.handler.entity.HttpChannelEntity;
+import io.mqtt.tool.MemPool;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
@@ -36,19 +38,24 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang3.StringUtils;
+import org.meqantt.message.Message;
+import org.meqantt.message.PublishMessage;
 
 public class HttpJSONPHandler {
 	private static final InternalLogger logger = InternalLoggerFactory
 			.getInstance(HttpJSONPHandler.class);
 
+	private final static String TEMPLATE = "%s(%s);";
+
 	private final static ConcurrentHashMap<String, Object> sessionMap = new ConcurrentHashMap<String, Object>(
 			100000, 0.9f, 256);
 
-	// Global Identiter/全局唯一
+	// Global Identiter/鍏ㄥ眬鍞竴
 	private static final AttributeKey<HttpRequest> key = AttributeKey
 			.valueOf("req");
 
@@ -93,7 +100,7 @@ public class HttpJSONPHandler {
 		} else if (req.getUri().contains("/jsonp/subscribe")) {
 			handleSubscrible(ctx, req);
 			return;
-		} else if (req.getUri().contains("/jsonp/polling")) { // 模拟ping以及获得请求
+		} else if (req.getUri().contains("/jsonp/polling")) {
 			handleWaitingMsg(ctx, req);
 			return;
 		} else if (req.getUri().contains("/jsonp/unsubscrible")) {
@@ -140,6 +147,36 @@ public class HttpJSONPHandler {
 			res.headers().set("Access-Control-Allow-Credentials", "true");
 		}
 
+		String sessionId = getClientJSessionId(req);
+
+		Object obj = sessionMap.get(sessionId);
+		if (obj instanceof HttpChannelEntity) {
+			logger.debug("HttpChannelEntity is not null!");
+			HttpChannelEntity httpChannelEntity = (HttpChannelEntity) obj;
+			BlockingQueue<Message> queue = httpChannelEntity.getQueue();
+
+			Message message = null;
+			try {
+				message = queue.poll(299L, TimeUnit.SECONDS);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+
+			if (message != null && message instanceof PublishMessage) {
+				logger.debug("message is not null!");
+				PublishMessage publishMessage = (PublishMessage) message;
+				String payload = publishMessage.getDataAsString();
+
+				ByteBuf content = ctx.alloc().directBuffer();
+				content.writeBytes(getTargetFormatMessage(req, payload)
+						.getBytes(CharsetUtil.UTF_8));
+				ctx.channel().writeAndFlush(content)
+						.addListener(ChannelFutureListener.CLOSE);
+
+				return;
+			}
+		}
+		logger.debug("going to set ReadTimeoutHandler now ...");
 		ctx.channel().write(res);
 		ctx.pipeline().addFirst(new ReadTimeoutHandler(5, TimeUnit.SECONDS));
 	}
@@ -172,9 +209,17 @@ public class HttpJSONPHandler {
 			return;
 		}
 
+		String sessionId = getClientJSessionId(req);
+
+		HttpChannelEntity httpChannelEntity = new HttpChannelEntity(sessionId);
+		MemPool.putTopic(httpChannelEntity, topic);
+
+		sessionMap.put(sessionId, httpChannelEntity);
+
 		logger.debug("topic = " + topic + " qos = " + qos);
 
-		ByteBuf content = Unpooled.wrappedBuffer("{status:true}".getBytes());
+		ByteBuf content = ctx.alloc().directBuffer()
+				.writeBytes("{status:true}".getBytes());
 		FullHttpResponse res = new DefaultFullHttpResponse(HTTP_1_1, OK,
 				content);
 		res.headers().set(CONTENT_TYPE, "text/html; charset=UTF-8");
@@ -184,14 +229,15 @@ public class HttpJSONPHandler {
 	}
 
 	private void handleConnect(ChannelHandlerContext ctx, HttpRequest req) {
-		ByteBuf content = Unpooled.wrappedBuffer("{status:true}".getBytes());
+		ByteBuf content = ctx.alloc().directBuffer()
+				.writeBytes("{status:true}".getBytes());
 		FullHttpResponse res = new DefaultFullHttpResponse(HTTP_1_1, OK,
 				content);
-		String jsessionId = genJSessionId();
+		String sessionId = genJSessionId();
 		res.headers().add("Set-Cookie",
-				ServerCookieEncoder.encode("JSESSIONID", jsessionId));
+				ServerCookieEncoder.encode("JSESSIONID", sessionId));
 
-		sessionMap.put(jsessionId, "");
+		sessionMap.put(sessionId, "");
 
 		res.headers().set(CONTENT_TYPE, "text/html; charset=UTF-8");
 		setContentLength(res, content.readableBytes());
@@ -255,5 +301,17 @@ public class HttpJSONPHandler {
 		if (!isKeepAlive(req) || res.getStatus().code() != 200) {
 			f.addListener(ChannelFutureListener.CLOSE);
 		}
+	}
+
+	private String getTargetFormatMessage(HttpRequest req, String jsonMessage) {
+		String callbackparam = getParameter(req, "jsoncallback");
+		if (callbackparam == null) {
+			callbackparam = "jsoncallback";
+		}
+
+		logger.debug("format json message : "
+				+ String.format(TEMPLATE, callbackparam, jsonMessage));
+
+		return String.format(TEMPLATE, callbackparam, jsonMessage);
 	}
 }

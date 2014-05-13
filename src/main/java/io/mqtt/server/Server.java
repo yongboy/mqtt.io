@@ -1,5 +1,6 @@
-package com.mqtt.io.server;
+package io.mqtt.server;
 
+import io.mqtt.tool.ConfigService;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelOption;
@@ -9,8 +10,6 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.netty.util.internal.logging.Log4JLoggerFactory;
-
-import com.mqtt.io.tool.ConfigService;
 
 public class Server {
 	private static final InternalLogger logger = InternalLoggerFactory

@@ -1,12 +1,11 @@
-package com.mqtt.io.server;
+package io.mqtt.server;
 
+import io.mqtt.handler.HttpWebSocketServerHandler;
+import io.mqtt.handler.coder.MqttMessageWebSocketFrameEncoder;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
-
-import com.mqtt.io.handler.HttpWebSocketServerHandler;
-import com.mqtt.io.handler.coder.MqttMessageWebSocketFrameEncoder;
 
 public class HttpChannelInitializer extends
 		ChannelInitializer<SocketChannel> {
