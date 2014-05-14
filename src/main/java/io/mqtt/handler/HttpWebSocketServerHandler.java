@@ -21,6 +21,7 @@ import java.util.List;
 /**
  * Handles handshakes and messages
  */
+@Deprecated
 public class HttpWebSocketServerHandler extends
 		SimpleChannelInboundHandler<Object> {
 	protected static final String WEBSOCKET_PATH = "/websocket";

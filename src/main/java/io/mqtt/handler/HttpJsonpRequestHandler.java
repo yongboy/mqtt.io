@@ -16,6 +16,7 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.Cookie;
 import io.netty.handler.codec.http.CookieDecoder;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
@@ -46,10 +47,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.meqantt.message.Message;
 import org.meqantt.message.PublishMessage;
 
-@Deprecated
-public class HttpJSONPHandler {
+public class HttpJsonpRequestHandler extends
+		SimpleChannelInboundHandler<FullHttpRequest> {
 	private static final InternalLogger logger = InternalLoggerFactory
-			.getInstance(HttpJSONPHandler.class);
+			.getInstance(HttpJsonpRequestHandler.class);
 
 	private final static String TEMPLATE = "%s(%s);";
 
@@ -60,27 +61,38 @@ public class HttpJSONPHandler {
 	private static final AttributeKey<HttpRequest> key = AttributeKey
 			.valueOf("req");
 
-	private HttpWebSocketServerHandler webSocketServerHandler;
+	private String websocketUri, selfUri;
 
-	public HttpJSONPHandler(HttpWebSocketServerHandler webSocketServerHandler) {
-		this.webSocketServerHandler = webSocketServerHandler;
+	public HttpJsonpRequestHandler(String websocketUri, String selfUri) {
+		this.websocketUri = websocketUri;
+		this.selfUri = selfUri;
 	}
 
-	@SuppressWarnings("static-access")
-	protected void handleHttpRequest(ChannelHandlerContext ctx,
-			FullHttpRequest req) throws Exception {
-		// Handle a bad request.
+	@Override
+	protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest req)
+			throws Exception {
 		if (!req.getDecoderResult().isSuccess()) {
 			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1,
 					BAD_REQUEST));
 			return;
 		}
 
-		if (req.getUri().contains(this.webSocketServerHandler.WEBSOCKET_PATH)) {
-			this.webSocketServerHandler.handshakeRequest(ctx, req);
+		if (req.getUri().equalsIgnoreCase(this.websocketUri)) {
+			ctx.fireChannelRead(req.retain());
 			return;
 		}
 
+		if (!req.getUri().startsWith(this.selfUri)) {
+			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1,
+					BAD_REQUEST));
+			return;
+		}
+
+		handleHttpRequest(ctx, req);
+	}
+
+	protected void handleHttpRequest(ChannelHandlerContext ctx,
+			FullHttpRequest req) throws Exception {
 		// Allow only GET methods.
 		if (req.getMethod() != GET) {
 			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1,
