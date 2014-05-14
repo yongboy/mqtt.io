@@ -21,7 +21,8 @@ public class HttpChannelInitializer extends ChannelInitializer<SocketChannel> {
 				new HttpObjectAggregator(65536),
 				new HttpJsonpRequestHandler(websocketUri, jsonpUriPrefix),
 				new WebSocketServerProtocolHandler(websocketUri),
-				new MqttMessageWebSocketFrameDecoder(), new MessageHandler());
+				new MqttMessageWebSocketFrameDecoder(),
+				new MessageHandler());
 
 		// ch.pipeline().addLast(
 		// new HttpServerCodec(),

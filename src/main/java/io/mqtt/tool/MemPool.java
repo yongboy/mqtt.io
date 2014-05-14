@@ -65,7 +65,7 @@ public class MemPool {
 		if (topic == null) {
 			return;
 		}
-
+		
 		Set<String> topicSet = channelTopicMap.get(chn);
 		if (topicSet == null) {
 			topicSet = new HashSet<String>(1);

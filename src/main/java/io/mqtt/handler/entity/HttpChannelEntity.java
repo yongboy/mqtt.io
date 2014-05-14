@@ -38,4 +38,14 @@ public class HttpChannelEntity extends ChannelEntity {
 	public BlockingQueue<Message> getQueue() {
 		return queue;
 	}
+
+	@Override
+	public int hashCode() {
+		return getSessionId().hashCode();
+	}
+
+	@Override
+	public String toString() {
+		return "JSESSIONID=" + getSessionId();
+	}
 }

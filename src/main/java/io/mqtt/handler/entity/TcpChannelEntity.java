@@ -13,6 +13,11 @@ public class TcpChannelEntity extends ChannelEntity {
 	}
 
 	@Override
+	public Channel getChannel() {
+		return this.channel;
+	}
+
+	@Override
 	public void write(Message message) {
 		this.channel.writeAndFlush(message);
 	}

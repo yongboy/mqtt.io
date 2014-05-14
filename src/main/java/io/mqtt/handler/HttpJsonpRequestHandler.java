@@ -91,6 +91,13 @@ public class HttpJsonpRequestHandler extends
 		handleHttpRequest(ctx, req);
 	}
 
+	@Override
+	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
+			throws Exception {
+		cause.printStackTrace();
+		ctx.close();
+	}
+
 	protected void handleHttpRequest(ChannelHandlerContext ctx,
 			FullHttpRequest req) throws Exception {
 		// Allow only GET methods.
@@ -160,8 +167,9 @@ public class HttpJsonpRequestHandler extends
 			res.headers().set("Access-Control-Allow-Credentials", "true");
 		}
 
-		String sessionId = getClientJSessionId(req);
+		ctx.channel().write(res);
 
+		String sessionId = getClientJSessionId(req);
 		Object obj = sessionMap.get(sessionId);
 		if (obj instanceof HttpChannelEntity) {
 			logger.debug("HttpChannelEntity is not null!");
@@ -190,7 +198,6 @@ public class HttpJsonpRequestHandler extends
 			}
 		}
 		logger.debug("going to set ReadTimeoutHandler now ...");
-		ctx.channel().write(res);
 		ctx.pipeline().addFirst(new ReadTimeoutHandler(5, TimeUnit.SECONDS));
 	}
 
@@ -203,7 +210,7 @@ public class HttpJsonpRequestHandler extends
 
 		String topic = getParameter(req, "topic");
 		String qosStr = getParameter(req, "qos");
-		if (StringUtils.isNotEmpty(topic)) {
+		if (StringUtils.isEmpty(topic)) {
 			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1,
 					BAD_REQUEST));
 			return;
@@ -273,7 +280,7 @@ public class HttpJsonpRequestHandler extends
 	private boolean checkJSessionId(HttpRequest req) {
 		String jsessionId = getClientJSessionId(req);
 
-		if (jsessionId != null) {
+		if (jsessionId == null) {
 			return false;
 		}
 

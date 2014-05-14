@@ -25,7 +25,8 @@ import org.meqantt.message.PingRespMessage;
 public class MessageHandler extends ChannelInboundHandlerAdapter {
 	private static PingRespMessage PINGRESP = new PingRespMessage();
 
-	public static Map<Message.Type, Processer> processers = new HashMap<Message.Type, Processer>(6);
+	public static Map<Message.Type, Processer> processers = new HashMap<Message.Type, Processer>(
+			6);
 
 	static {
 		processers.put(Type.CONNECT, new ConnectProcesser());
@@ -41,8 +42,8 @@ public class MessageHandler extends ChannelInboundHandlerAdapter {
 			throws Exception {
 		try {
 			if (e.getCause() instanceof ReadTimeoutException) {
-				ctx.write(PINGRESP)
-						.addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
+				ctx.write(PINGRESP).addListener(
+						ChannelFutureListener.CLOSE_ON_FAILURE);
 			} else {
 				ctx.channel().close();
 			}
@@ -50,6 +51,8 @@ public class MessageHandler extends ChannelInboundHandlerAdapter {
 			t.printStackTrace();
 			ctx.channel().close();
 		}
+
+		e.printStackTrace();
 	}
 
 	@Override
@@ -64,20 +67,19 @@ public class MessageHandler extends ChannelInboundHandlerAdapter {
 		if (rmsg == null) {
 			return;
 		}
-		
+
 		if (rmsg instanceof ConnAckMessage
 				&& ((ConnAckMessage) rmsg).getStatus() != ConnectionStatus.ACCEPTED) {
 			ctx.write(rmsg).addListener(ChannelFutureListener.CLOSE);
 		} else if (rmsg instanceof DisconnectMessage) {
 			ctx.write(rmsg).addListener(ChannelFutureListener.CLOSE);
 		} else {
-			ctx.write(rmsg)
-					.addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
+			ctx.write(rmsg).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
 		}
 	}
-	
-    @Override
-    public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
-        ctx.flush();
-    }
+
+	@Override
+	public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
+		ctx.flush();
+	}
 }
