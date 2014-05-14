@@ -12,6 +12,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.timeout.ReadTimeoutException;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -25,16 +26,19 @@ import org.meqantt.message.PingRespMessage;
 public class MqttMessageHandler extends ChannelInboundHandlerAdapter {
 	private static PingRespMessage PINGRESP = new PingRespMessage();
 
-	public static Map<Message.Type, Processer> processers = new HashMap<Message.Type, Processer>(
-			6);
-
+	private static final Map<Message.Type, Processer> processers;
 	static {
-		processers.put(Type.CONNECT, new ConnectProcesser());
-		processers.put(Type.PUBLISH, new PublishProcesser());
-		processers.put(Type.SUBSCRIBE, new SubscribeProcesser());
-		processers.put(Type.UNSUBSCRIBE, new UnsubscribeProcesser());
-		processers.put(Type.PINGREQ, new PingReqProcesser());
-		processers.put(Type.DISCONNECT, new DisConnectProcesser());
+		Map<Message.Type, Processer> map = new HashMap<Message.Type, Processer>(
+				6);
+
+		map.put(Type.CONNECT, new ConnectProcesser());
+		map.put(Type.PUBLISH, new PublishProcesser());
+		map.put(Type.SUBSCRIBE, new SubscribeProcesser());
+		map.put(Type.UNSUBSCRIBE, new UnsubscribeProcesser());
+		map.put(Type.PINGREQ, new PingReqProcesser());
+		map.put(Type.DISCONNECT, new DisConnectProcesser());
+
+		processers = Collections.unmodifiableMap(map);
 	}
 
 	@Override
