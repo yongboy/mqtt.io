@@ -22,7 +22,7 @@ import org.meqantt.message.Message;
 import org.meqantt.message.Message.Type;
 import org.meqantt.message.PingRespMessage;
 
-public class MessageHandler extends ChannelInboundHandlerAdapter {
+public class MqttMessageHandler extends ChannelInboundHandlerAdapter {
 	private static PingRespMessage PINGRESP = new PingRespMessage();
 
 	public static Map<Message.Type, Processer> processers = new HashMap<Message.Type, Processer>(

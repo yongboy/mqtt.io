@@ -1,7 +1,7 @@
 package io.mqtt.server;
 
 import io.mqtt.handler.HttpJsonpRequestHandler;
-import io.mqtt.handler.MessageHandler;
+import io.mqtt.handler.MqttMessageHandler;
 import io.mqtt.handler.coder.MqttMessageWebSocketFrameDecoder;
 import io.mqtt.handler.coder.MqttMessageWebSocketFrameEncoder;
 import io.netty.channel.ChannelInitializer;
@@ -22,7 +22,7 @@ public class HttpChannelInitializer extends ChannelInitializer<SocketChannel> {
 				new HttpJsonpRequestHandler(websocketUri, jsonpUriPrefix),
 				new WebSocketServerProtocolHandler(websocketUri),
 				new MqttMessageWebSocketFrameDecoder(),
-				new MessageHandler());
+				new MqttMessageHandler());
 
 		// ch.pipeline().addLast(
 		// new HttpServerCodec(),

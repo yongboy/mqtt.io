@@ -6,9 +6,11 @@ import static io.netty.handler.codec.http.HttpHeaders.Names.CONTENT_TYPE;
 import static io.netty.handler.codec.http.HttpMethod.GET;
 import static io.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
 import static io.netty.handler.codec.http.HttpResponseStatus.FORBIDDEN;
+import static io.netty.handler.codec.http.HttpResponseStatus.UNAUTHORIZED;
 import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
+import io.mqtt.handler.entity.BlankHttpChannelEntity;
 import io.mqtt.handler.entity.HttpChannelEntity;
 import io.mqtt.tool.MemPool;
 import io.netty.buffer.ByteBuf;
@@ -52,9 +54,10 @@ public class HttpJsonpRequestHandler extends
 	private static final InternalLogger logger = InternalLoggerFactory
 			.getInstance(HttpJsonpRequestHandler.class);
 
+	private final static String HEADER_CONTENT_TYPE = "text/javascript; charset=UTF-8";
 	private final static String TEMPLATE = "%s(%s);";
 
-	private final static ConcurrentHashMap<String, Object> sessionMap = new ConcurrentHashMap<String, Object>(
+	private final static ConcurrentHashMap<String, HttpChannelEntity> sessionMap = new ConcurrentHashMap<String, HttpChannelEntity>(
 			100000, 0.9f, 256);
 
 	// Global Identiter/全局唯一
@@ -150,13 +153,13 @@ public class HttpJsonpRequestHandler extends
 	private void handleWaitingMsg(ChannelHandlerContext ctx, HttpRequest req) {
 		if (!checkJSessionId(req)) {
 			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1,
-					BAD_REQUEST));
+					UNAUTHORIZED));
 			return;
 		}
 		ctx.attr(key).set(req);
 
 		HttpResponse res = new DefaultHttpResponse(HTTP_1_1, OK);
-		res.headers().set(CONTENT_TYPE, "text/html; charset=UTF-8");
+		res.headers().set(CONTENT_TYPE, HEADER_CONTENT_TYPE);
 		res.headers().set(HttpHeaders.Names.CONNECTION,
 				HttpHeaders.Values.KEEP_ALIVE);
 		res.headers().set("X-XSS-Protection", "0");
@@ -204,7 +207,7 @@ public class HttpJsonpRequestHandler extends
 	private void handleSubscrible(ChannelHandlerContext ctx, HttpRequest req) {
 		if (!checkJSessionId(req)) {
 			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1,
-					BAD_REQUEST));
+					UNAUTHORIZED));
 			return;
 		}
 
@@ -231,18 +234,21 @@ public class HttpJsonpRequestHandler extends
 
 		String sessionId = getClientJSessionId(req);
 
-		HttpChannelEntity httpChannelEntity = new HttpChannelEntity(sessionId);
+		HttpChannelEntity httpChannelEntity = sessionMap.get(sessionId);
+
+		if (httpChannelEntity instanceof BlankHttpChannelEntity) {
+			httpChannelEntity = new HttpChannelEntity(sessionId);
+			sessionMap.put(sessionId, httpChannelEntity);
+		}
+
 		MemPool.putTopic(httpChannelEntity, topic);
-
-		sessionMap.put(sessionId, httpChannelEntity);
-
 		logger.debug("topic = " + topic + " qos = " + qos);
 
 		ByteBuf content = ctx.alloc().directBuffer()
 				.writeBytes("{status:true}".getBytes());
 		FullHttpResponse res = new DefaultFullHttpResponse(HTTP_1_1, OK,
 				content);
-		res.headers().set(CONTENT_TYPE, "text/html; charset=UTF-8");
+		res.headers().set(CONTENT_TYPE, HEADER_CONTENT_TYPE);
 		setContentLength(res, content.readableBytes());
 
 		sendHttpResponse(ctx, req, res);
@@ -253,13 +259,16 @@ public class HttpJsonpRequestHandler extends
 				.writeBytes("{status:true}".getBytes());
 		FullHttpResponse res = new DefaultFullHttpResponse(HTTP_1_1, OK,
 				content);
-		String sessionId = genJSessionId();
-		res.headers().add("Set-Cookie",
-				ServerCookieEncoder.encode("JSESSIONID", sessionId));
 
-		sessionMap.put(sessionId, "");
+		String sessionId = getClientJSessionId(req);
+		if (!checkJSessionId(sessionId)) {
+			sessionId = genJSessionId();
+			res.headers().add("Set-Cookie",
+					ServerCookieEncoder.encode("JSESSIONID", sessionId));
 
-		res.headers().set(CONTENT_TYPE, "text/html; charset=UTF-8");
+			sessionMap.put(sessionId, BlankHttpChannelEntity.BLANK);
+		}
+		res.headers().set(CONTENT_TYPE, HEADER_CONTENT_TYPE);
 		setContentLength(res, content.readableBytes());
 
 		sendHttpResponse(ctx, req, res);
@@ -285,6 +294,14 @@ public class HttpJsonpRequestHandler extends
 		}
 
 		return sessionMap.containsKey(jsessionId);
+	}
+
+	private boolean checkJSessionId(String sessionId) {
+		if (sessionId == null) {
+			return false;
+		}
+
+		return sessionMap.containsKey(sessionId);
 	}
 
 	private String getClientJSessionId(HttpRequest req) {
