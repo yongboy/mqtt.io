@@ -1,6 +1,6 @@
 package io.mqtt.handler.entity;
 
-import io.mqtt.handler.HttpJsonpRequestHandler;
+import io.mqtt.handler.http.HttpJsonpTransport;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.internal.logging.InternalLogger;
@@ -37,18 +37,19 @@ public class HttpChannelEntity extends ChannelEntity {
 		if (message == null)
 			return;
 
-		if (ctx != null) {
-			if (message instanceof PublishMessage) {
-				PublishMessage publishMessage = (PublishMessage) message;
-				HttpJsonpRequestHandler.doWriteBody(ctx, publishMessage);
-			} else {
-				logger.debug("message type = " + message.getClass());
-			}
-
-			ctx = null;
-		} else {
+		if (ctx == null) {
 			queue.add(message);
+			return;
 		}
+
+		if (message instanceof PublishMessage) {
+			PublishMessage publishMessage = (PublishMessage) message;
+			HttpJsonpTransport.doWriteBody(ctx, publishMessage);
+		} else {
+			logger.debug("message type = " + message.getClass());
+		}
+
+		ctx = null;
 	}
 
 	public String getSessionId() {

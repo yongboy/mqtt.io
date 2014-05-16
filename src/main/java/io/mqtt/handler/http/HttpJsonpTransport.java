@@ -1,4 +1,4 @@
-package io.mqtt.handler;
+package io.mqtt.handler.http;
 
 import static io.netty.handler.codec.http.HttpHeaders.isKeepAlive;
 import static io.netty.handler.codec.http.HttpHeaders.setContentLength;
@@ -50,10 +50,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.meqantt.message.Message;
 import org.meqantt.message.PublishMessage;
 
-public class HttpJsonpRequestHandler extends
-		SimpleChannelInboundHandler<FullHttpRequest> {
+public class HttpJsonpTransport extends HttpDefaultTransport {
 	private static final InternalLogger logger = InternalLoggerFactory
-			.getInstance(HttpJsonpRequestHandler.class);
+			.getInstance(HttpJsonpTransport.class);
+	
+	public static final String PREFIX = "/jsonp/";
 
 	private final static String HEADER_CONTENT_TYPE = "text/javascript; charset=UTF-8";
 	private final static String TEMPLATE = "%s(%s);";
@@ -65,63 +66,9 @@ public class HttpJsonpRequestHandler extends
 	private static final AttributeKey<HttpRequest> key = AttributeKey
 			.valueOf("req");
 
-	private String websocketUri, selfUri;
-
-	public HttpJsonpRequestHandler(String websocketUri, String selfUri) {
-		this.websocketUri = websocketUri;
-		this.selfUri = selfUri;
-	}
-
 	@Override
-	protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest req)
+	public void handleRequest(ChannelHandlerContext ctx, FullHttpRequest req)
 			throws Exception {
-		if (!req.getDecoderResult().isSuccess()) {
-			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1,
-					BAD_REQUEST));
-			return;
-		}
-
-		if (req.getUri().equalsIgnoreCase(this.websocketUri)) {
-			ctx.fireChannelRead(req.retain());
-			return;
-		}
-
-		if (!req.getUri().startsWith(this.selfUri)) {
-			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1,
-					BAD_REQUEST));
-			return;
-		}
-
-		handleHttpRequest(ctx, req);
-	}
-
-	@Override
-	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
-			throws Exception {
-		if (cause instanceof ReadTimeoutException) {
-			handleTimeout(ctx);
-		} else {
-			cause.printStackTrace();
-			ctx.close();
-		}
-	}
-
-	protected void handleHttpRequest(ChannelHandlerContext ctx,
-			FullHttpRequest req) throws Exception {
-		// Allow only GET methods.
-		if (req.getMethod() != GET) {
-			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1,
-					FORBIDDEN));
-			return;
-		}
-
-		if ("/favicon.ico".equals(req.getUri())) {
-			FullHttpResponse res = new DefaultFullHttpResponse(HTTP_1_1,
-					NOT_FOUND);
-			sendHttpResponse(ctx, req, res);
-			return;
-		}
-
 		if (req.getUri().contains("/jsonp/connect")) {
 			handleConnect(ctx, req);
 		} else if (req.getUri().contains("/jsonp/subscribe")) {
@@ -144,6 +91,7 @@ public class HttpJsonpRequestHandler extends
 		// TODO code here...
 	}
 
+	@Override
 	public void handleTimeout(ChannelHandlerContext ctx) {
 		HttpRequest req = ctx.attr(key).get();
 		String sessionId = getClientJSessionId(req);
@@ -286,9 +234,10 @@ public class HttpJsonpRequestHandler extends
 		setContentLength(res, content.readableBytes());
 
 		sendHttpResponse(ctx, req, res);
+		// ctx.executor().schedule(command, delay, unit)
 	}
 
-	private String getParameter(HttpRequest req, String name) {
+	private static String getParameter(HttpRequest req, String name) {
 		QueryStringDecoder decoderQuery = new QueryStringDecoder(req.getUri());
 		Map<String, List<String>> uriAttributes = decoderQuery.parameters();
 
@@ -366,4 +315,23 @@ public class HttpJsonpRequestHandler extends
 
 		return String.format(TEMPLATE, callbackparam, jsonMessage);
 	}
+
+	@Override
+	public void handleRequest(ChannelHandlerContext ctx, HttpRequest req)
+			throws Exception {
+		// TODO Auto-generated method stub
+		
+	}
+
+	// private static Runnable runnable = new Runnable(String sessionId) {
+	// private String sessionId;
+	// {
+	// this.sessionId = sessionId;
+	// }
+	//
+	// @Override
+	// public void run() {
+	//
+	// }
+	// };
 }
