@@ -1,6 +1,5 @@
 package io.mqtt.processer;
 
-import io.mqtt.handler.entity.ChannelEntity;
 import io.mqtt.handler.entity.TcpChannelEntity;
 import io.mqtt.tool.MemPool;
 import io.netty.channel.Channel;

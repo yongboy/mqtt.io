@@ -6,9 +6,9 @@ import static io.netty.handler.codec.http.HttpHeaders.Names.CONTENT_TYPE;
 import static io.netty.handler.codec.http.HttpMethod.GET;
 import static io.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
 import static io.netty.handler.codec.http.HttpResponseStatus.FORBIDDEN;
-import static io.netty.handler.codec.http.HttpResponseStatus.UNAUTHORIZED;
 import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
+import static io.netty.handler.codec.http.HttpResponseStatus.UNAUTHORIZED;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 import io.mqtt.handler.entity.BlankHttpChannelEntity;
 import io.mqtt.handler.entity.HttpChannelEntity;
@@ -31,6 +31,7 @@ import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.QueryStringDecoder;
 import io.netty.handler.codec.http.ServerCookieEncoder;
+import io.netty.handler.timeout.ReadTimeoutException;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.util.AttributeKey;
 import io.netty.util.CharsetUtil;
@@ -39,9 +40,9 @@ import io.netty.util.internal.logging.InternalLoggerFactory;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -97,8 +98,12 @@ public class HttpJsonpRequestHandler extends
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
 			throws Exception {
-		cause.printStackTrace();
-		ctx.close();
+		if (cause instanceof ReadTimeoutException) {
+			handleTimeout(ctx);
+		} else {
+			cause.printStackTrace();
+			ctx.close();
+		}
 	}
 
 	protected void handleHttpRequest(ChannelHandlerContext ctx,
@@ -119,16 +124,12 @@ public class HttpJsonpRequestHandler extends
 
 		if (req.getUri().contains("/jsonp/connect")) {
 			handleConnect(ctx, req);
-			return;
 		} else if (req.getUri().contains("/jsonp/subscribe")) {
 			handleSubscrible(ctx, req);
-			return;
 		} else if (req.getUri().contains("/jsonp/polling")) {
 			handleWaitingMsg(ctx, req);
-			return;
 		} else if (req.getUri().contains("/jsonp/unsubscrible")) {
 			handleUnsubscrible(ctx, req);
-			return;
 		} else if (req.getUri().contains("/jsonp/publish")) {
 			// HttpResponseStatus
 			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1,
@@ -144,10 +145,13 @@ public class HttpJsonpRequestHandler extends
 	}
 
 	public void handleTimeout(ChannelHandlerContext ctx) {
+		HttpRequest req = ctx.attr(key).get();
+		String sessionId = getClientJSessionId(req);
+		HttpChannelEntity httpChannelEntity = sessionMap.get(sessionId);
+		httpChannelEntity.setCtx(null);
 		// empty json
 		ByteBuf content = Unpooled.copiedBuffer("{}", CharsetUtil.UTF_8);
-		ctx.channel().writeAndFlush(content)
-				.addListener(ChannelFutureListener.CLOSE);
+		ctx.writeAndFlush(content).addListener(ChannelFutureListener.CLOSE);
 	}
 
 	private void handleWaitingMsg(ChannelHandlerContext ctx, HttpRequest req) {
@@ -170,38 +174,48 @@ public class HttpJsonpRequestHandler extends
 			res.headers().set("Access-Control-Allow-Credentials", "true");
 		}
 
-		ctx.channel().write(res);
+		ctx.write(res);
 
 		String sessionId = getClientJSessionId(req);
-		Object obj = sessionMap.get(sessionId);
-		if (obj instanceof HttpChannelEntity) {
-			logger.debug("HttpChannelEntity is not null!");
-			HttpChannelEntity httpChannelEntity = (HttpChannelEntity) obj;
-			BlockingQueue<Message> queue = httpChannelEntity.getQueue();
+		HttpChannelEntity httpChannelEntity = sessionMap.get(sessionId);
+		Queue<Message> queue = httpChannelEntity.getQueue();
 
-			Message message = null;
+		Message message = queue.poll();
+
+		if (message != null && message instanceof PublishMessage) {
+			logger.debug("message is not null!");
+			PublishMessage publishMessage = (PublishMessage) message;
+			doWriteBody(ctx, publishMessage);
+
+			return;
+		}
+
+		httpChannelEntity.setCtx(ctx);
+
+		String timeoutStr = getParameter(req, "timeout");
+		int timeout = 0;
+		if (StringUtils.isNumeric(timeoutStr)) {
 			try {
-				message = queue.poll(299L, TimeUnit.SECONDS);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-
-			if (message != null && message instanceof PublishMessage) {
-				logger.debug("message is not null!");
-				PublishMessage publishMessage = (PublishMessage) message;
-				String payload = publishMessage.getDataAsString();
-
-				ByteBuf content = ctx.alloc().directBuffer();
-				content.writeBytes(getTargetFormatMessage(req, payload)
-						.getBytes(CharsetUtil.UTF_8));
-				ctx.channel().writeAndFlush(content)
-						.addListener(ChannelFutureListener.CLOSE);
-
-				return;
+				timeout = Integer.parseInt(timeoutStr);
+			} catch (Exception e) {
 			}
 		}
+		if (timeout <= 0) {
+			timeout = 299;
+		}
+
 		logger.debug("going to set ReadTimeoutHandler now ...");
-		ctx.pipeline().addFirst(new ReadTimeoutHandler(5, TimeUnit.SECONDS));
+		ctx.pipeline().addFirst(
+				new ReadTimeoutHandler(timeout, TimeUnit.SECONDS));
+	}
+
+	public static void doWriteBody(ChannelHandlerContext ctx,
+			PublishMessage publishMessage) {
+		ByteBuf content = ctx.alloc().directBuffer();
+		HttpRequest req = ctx.attr(key).get();
+		content.writeBytes(getTargetFormatMessage(req,
+				publishMessage.getDataAsString()).getBytes(CharsetUtil.UTF_8));
+		ctx.writeAndFlush(content).addListener(ChannelFutureListener.CLOSE);
 	}
 
 	private void handleSubscrible(ChannelHandlerContext ctx, HttpRequest req) {
@@ -334,13 +348,14 @@ public class HttpJsonpRequestHandler extends
 		}
 
 		// Send the response and close the connection if necessary.
-		ChannelFuture f = ctx.channel().writeAndFlush(res);
+		ChannelFuture f = ctx.writeAndFlush(res);
 		if (!isKeepAlive(req) || res.getStatus().code() != 200) {
 			f.addListener(ChannelFutureListener.CLOSE);
 		}
 	}
 
-	private String getTargetFormatMessage(HttpRequest req, String jsonMessage) {
+	private static String getTargetFormatMessage(HttpRequest req,
+			String jsonMessage) {
 		String callbackparam = getParameter(req, "jsoncallback");
 		if (callbackparam == null) {
 			callbackparam = "jsoncallback";
