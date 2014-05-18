@@ -7,8 +7,8 @@ import static io.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static io.netty.handler.codec.http.HttpResponseStatus.UNAUTHORIZED;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
-import io.mqtt.handler.entity.BlankHttpChannelEntity;
 import io.mqtt.handler.entity.HttpChannelEntity;
+import io.mqtt.handler.entity.HttpJsonpChannelEntity;
 import io.mqtt.tool.MemPool;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -36,7 +36,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.meqantt.message.Message;
 import org.meqantt.message.PublishMessage;
 
-public class HttpJsonpTransport extends HttpDefaultTransport {
+public class HttpJsonpTransport extends HttpTransport {
 	private static final InternalLogger logger = InternalLoggerFactory
 			.getInstance(HttpJsonpTransport.class);
 
@@ -74,7 +74,8 @@ public class HttpJsonpTransport extends HttpDefaultTransport {
 	public void handleTimeout(ChannelHandlerContext ctx) {
 		HttpRequest req = ctx.attr(HttpSessionStore.key).get();
 		String sessionId = HttpSessionStore.getClientJSessionId(req);
-		HttpChannelEntity httpChannelEntity = HttpSessionStore.sessionMap.get(sessionId);
+		HttpJsonpChannelEntity httpChannelEntity = HttpSessionStore.sessionMap
+				.get(sessionId);
 		httpChannelEntity.setCtx(null);
 		// empty json
 		ByteBuf content = Unpooled.copiedBuffer("{}", CharsetUtil.UTF_8);
@@ -104,7 +105,8 @@ public class HttpJsonpTransport extends HttpDefaultTransport {
 		ctx.write(res);
 
 		String sessionId = HttpSessionStore.getClientJSessionId(req);
-		HttpChannelEntity httpChannelEntity = HttpSessionStore.sessionMap.get(sessionId);
+		HttpJsonpChannelEntity httpChannelEntity = HttpSessionStore.sessionMap
+				.get(sessionId);
 		Queue<Message> queue = httpChannelEntity.getQueue();
 
 		Message message = queue.poll();
@@ -175,14 +177,15 @@ public class HttpJsonpTransport extends HttpDefaultTransport {
 
 		String sessionId = HttpSessionStore.getClientJSessionId(req);
 
-		HttpChannelEntity httpChannelEntity = HttpSessionStore.sessionMap.get(sessionId);
+		HttpJsonpChannelEntity httpChannelEntity = HttpSessionStore.sessionMap
+				.get(sessionId);
 
 		if (httpChannelEntity.getSessionId() == null) {
-			httpChannelEntity = new HttpChannelEntity(sessionId);
+			httpChannelEntity = new HttpJsonpChannelEntity(sessionId);
 			HttpSessionStore.sessionMap.put(sessionId, httpChannelEntity);
 		}
 
-		MemPool.putTopic(httpChannelEntity, topic);
+		MemPool.registerTopic(httpChannelEntity, topic);
 		logger.debug("topic = " + topic + " qos = " + qos);
 
 		ByteBuf content = ctx.alloc().directBuffer()
@@ -207,7 +210,7 @@ public class HttpJsonpTransport extends HttpDefaultTransport {
 			res.headers().add("Set-Cookie",
 					ServerCookieEncoder.encode("JSESSIONID", sessionId));
 
-			HttpSessionStore.sessionMap.put(sessionId, BlankHttpChannelEntity.BLANK);
+			HttpSessionStore.sessionMap.put(sessionId, HttpChannelEntity.BLANK);
 		}
 		res.headers().set(CONTENT_TYPE, HEADER_CONTENT_TYPE);
 		setContentLength(res, content.readableBytes());
@@ -236,7 +239,8 @@ public class HttpJsonpTransport extends HttpDefaultTransport {
 
 	private static String getTargetFormatMessage(HttpRequest req,
 			String jsonMessage) {
-		String callbackparam = HttpSessionStore.getParameter(req, "jsoncallback");
+		String callbackparam = HttpSessionStore.getParameter(req,
+				"jsoncallback");
 		if (callbackparam == null) {
 			callbackparam = "jsoncallback";
 		}
@@ -247,15 +251,18 @@ public class HttpJsonpTransport extends HttpDefaultTransport {
 		return String.format(TEMPLATE, callbackparam, jsonMessage);
 	}
 
-	// private static Runnable runnable = new Runnable(String sessionId) {
-	// private String sessionId;
-	// {
-	// this.sessionId = sessionId;
-	// }
-	//
-	// @Override
-	// public void run() {
-	//
-	// }
-	// };
+	private static final class SessionTimeoutTask implements Runnable {
+
+		private String sessionId;
+
+		public SessionTimeoutTask(String sessionId) {
+			this.sessionId = sessionId;
+		}
+
+		@Override
+		public void run() {
+			HttpSessionStore.sessionMap.remove(sessionId);
+			// TODO unregister topics
+		}
+	};
 }

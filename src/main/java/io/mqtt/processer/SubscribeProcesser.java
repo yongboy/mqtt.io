@@ -29,7 +29,7 @@ public class SubscribeProcesser implements Processer {
 				sam.addQoS(QoS.AT_MOST_ONCE);
 				ChannelEntity channelEntity = new TcpChannelEntity(
 						ctx.channel());
-				MemPool.putTopic(channelEntity, topic);
+				MemPool.registerTopic(channelEntity, topic);
 			}
 		}
 

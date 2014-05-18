@@ -7,7 +7,7 @@ import static io.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
 import static io.netty.handler.codec.http.HttpResponseStatus.FORBIDDEN;
 import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
-import io.mqtt.handler.http.HttpDefaultTransport;
+import io.mqtt.handler.http.HttpTransport;
 import io.mqtt.handler.http.HttpJsonpTransport;
 import io.mqtt.handler.http.HttpSessionStore;
 import io.netty.buffer.ByteBuf;
@@ -38,7 +38,7 @@ public class HttpRequestHandler extends
 
 	private String websocketUri;
 
-	private static Map<String, HttpDefaultTransport> transportMap = new HashMap<String, HttpDefaultTransport>(
+	private static Map<String, HttpTransport> transportMap = new HashMap<String, HttpTransport>(
 			1);
 	static {
 		HttpJsonpTransport httpJsonpTransport = new HttpJsonpTransport();
@@ -77,7 +77,7 @@ public class HttpRequestHandler extends
 			return;
 		}
 
-		HttpDefaultTransport transport = getTransport(req);
+		HttpTransport transport = getTransport(req);
 		if (transport == null) {
 			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1,
 					BAD_REQUEST));
@@ -90,7 +90,7 @@ public class HttpRequestHandler extends
 	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
 			throws Exception {
 		if (cause instanceof ReadTimeoutException) {
-			HttpDefaultTransport transport = getTransport(ctx);
+			HttpTransport transport = getTransport(ctx);
 			if (transport != null) {
 				transport.handleTimeout(ctx);
 			}
@@ -100,12 +100,12 @@ public class HttpRequestHandler extends
 		}
 	}
 
-	private HttpDefaultTransport getTransport(ChannelHandlerContext ctx) {
+	private HttpTransport getTransport(ChannelHandlerContext ctx) {
 		HttpRequest req = ctx.attr(HttpSessionStore.key).get();
 		return getTransport(req);
 	}
 
-	private HttpDefaultTransport getTransport(HttpRequest req) {
+	private HttpTransport getTransport(HttpRequest req) {
 		if (req == null)
 			return null;
 

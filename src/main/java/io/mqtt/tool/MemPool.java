@@ -46,7 +46,7 @@ public class MemPool {
 		Set<String> topicSet = channelTopicMap.remove(chn);
 		if (topicSet != null) {
 			for (String topic : topicSet) {
-				removeTopic(chn, topic);
+				unregisterTopic(chn, topic);
 			}
 		}
 
@@ -58,7 +58,7 @@ public class MemPool {
 		chn.closeFuture().removeListener(clientRemover);
 	}
 
-	public static void putTopic(ChannelEntity chn, String topic) {
+	public static void registerTopic(ChannelEntity chn, String topic) {
 		if (chn == null) {
 			return;
 		}
@@ -83,7 +83,7 @@ public class MemPool {
 		topicChannelMap.put(topic, channelSet);
 	}
 
-	public static void removeTopic(Channel chn, String topic) {
+	public static void unregisterTopic(Channel chn, String topic) {
 		Set<ChannelEntity> channelSet = topicChannelMap.get(topic);
 		channelSet.remove(chn);
 		if (channelSet.isEmpty()) {

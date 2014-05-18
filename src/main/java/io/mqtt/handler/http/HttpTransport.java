@@ -3,7 +3,7 @@ package io.mqtt.handler.http;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.FullHttpRequest;
 
-public abstract class HttpDefaultTransport {
+public abstract class HttpTransport {
 
 	public void handleTimeout(ChannelHandlerContext ctx) {
 		// do nothing ...

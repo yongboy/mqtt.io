@@ -1,6 +1,6 @@
 package io.mqtt.handler.http;
 
-import io.mqtt.handler.entity.HttpChannelEntity;
+import io.mqtt.handler.entity.HttpJsonpChannelEntity;
 import io.netty.handler.codec.http.Cookie;
 import io.netty.handler.codec.http.CookieDecoder;
 import io.netty.handler.codec.http.HttpHeaders;
@@ -15,7 +15,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class HttpSessionStore {
-	public final static ConcurrentHashMap<String, HttpChannelEntity> sessionMap = new ConcurrentHashMap<String, HttpChannelEntity>(
+	public final static ConcurrentHashMap<String, HttpJsonpChannelEntity> sessionMap = new ConcurrentHashMap<String, HttpJsonpChannelEntity>(
 			100000, 0.9f, 256);
 	
 	// Global Identiter/全局唯一
