@@ -7,6 +7,7 @@ import static io.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static io.netty.handler.codec.http.HttpResponseStatus.UNAUTHORIZED;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
+import io.mqtt.handler.entity.ChannelEntity;
 import io.mqtt.handler.entity.HttpChannelEntity;
 import io.mqtt.handler.entity.HttpJsonpChannelEntity;
 import io.mqtt.tool.MemPool;
@@ -26,6 +27,7 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.ServerCookieEncoder;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.util.CharsetUtil;
+import io.netty.util.concurrent.ScheduledFuture;
 import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 
@@ -73,9 +75,9 @@ public class HttpJsonpTransport extends HttpTransport {
 	@Override
 	public void handleTimeout(ChannelHandlerContext ctx) {
 		HttpRequest req = ctx.attr(HttpSessionStore.key).get();
-		String sessionId = HttpSessionStore.getClientJSessionId(req);
-		HttpJsonpChannelEntity httpChannelEntity = HttpSessionStore.sessionMap
-				.get(sessionId);
+		String sessionId = HttpSessionStore.getClientSessionId(req);
+		HttpJsonpChannelEntity httpChannelEntity = (HttpJsonpChannelEntity) MemPool
+				.getChannelEntryByClientId(sessionId);
 		httpChannelEntity.setCtx(null);
 		// empty json
 		ByteBuf content = Unpooled.copiedBuffer("{}", CharsetUtil.UTF_8);
@@ -104,9 +106,12 @@ public class HttpJsonpTransport extends HttpTransport {
 
 		ctx.write(res);
 
-		String sessionId = HttpSessionStore.getClientJSessionId(req);
-		HttpJsonpChannelEntity httpChannelEntity = HttpSessionStore.sessionMap
-				.get(sessionId);
+		String sessionId = HttpSessionStore.getClientSessionId(req);
+		HttpJsonpChannelEntity httpChannelEntity = (HttpJsonpChannelEntity) MemPool
+				.getChannelEntryByClientId(sessionId);
+		// cancel SessionTimeoutTask
+		httpChannelEntity.getScheduleTask().cancel(true);
+
 		Queue<Message> queue = httpChannelEntity.getQueue();
 
 		Message message = queue.poll();
@@ -115,6 +120,11 @@ public class HttpJsonpTransport extends HttpTransport {
 			logger.debug("message is not null!");
 			PublishMessage publishMessage = (PublishMessage) message;
 			doWriteBody(ctx, publishMessage);
+
+			ScheduledFuture<?> scheduleTask = ctx.executor().schedule(
+					new SessionTimeoutTask(sessionId), 30, TimeUnit.SECONDS);
+
+			httpChannelEntity.setScheduleTask(scheduleTask);
 
 			return;
 		}
@@ -132,6 +142,12 @@ public class HttpJsonpTransport extends HttpTransport {
 		if (timeout <= 0) {
 			timeout = 299;
 		}
+
+		ScheduledFuture<?> scheduleTask = ctx.executor().schedule(
+				new SessionTimeoutTask(sessionId), (long) (1.5 * timeout),
+				TimeUnit.SECONDS);
+
+		httpChannelEntity.setScheduleTask(scheduleTask);
 
 		logger.debug("going to set ReadTimeoutHandler now ...");
 		ctx.pipeline().addFirst(
@@ -175,14 +191,15 @@ public class HttpJsonpTransport extends HttpTransport {
 			return;
 		}
 
-		String sessionId = HttpSessionStore.getClientJSessionId(req);
+		String sessionId = HttpSessionStore.getClientSessionId(req);
 
-		HttpJsonpChannelEntity httpChannelEntity = HttpSessionStore.sessionMap
-				.get(sessionId);
+		HttpJsonpChannelEntity httpChannelEntity = (HttpJsonpChannelEntity) MemPool
+				.getChannelEntryByClientId(sessionId);
 
 		if (httpChannelEntity.getSessionId() == null) {
 			httpChannelEntity = new HttpJsonpChannelEntity(sessionId);
-			HttpSessionStore.sessionMap.put(sessionId, httpChannelEntity);
+
+			MemPool.registerClienId(sessionId, httpChannelEntity);
 		}
 
 		MemPool.registerTopic(httpChannelEntity, topic);
@@ -204,19 +221,29 @@ public class HttpJsonpTransport extends HttpTransport {
 		FullHttpResponse res = new DefaultFullHttpResponse(HTTP_1_1, OK,
 				content);
 
-		String sessionId = HttpSessionStore.getClientJSessionId(req);
+		String sessionId = HttpSessionStore.getClientSessionId(req);
+		HttpChannelEntity httpChannelEntity = null;
 		if (!HttpSessionStore.checkJSessionId(sessionId)) {
 			sessionId = HttpSessionStore.genJSessionId();
 			res.headers().add("Set-Cookie",
 					ServerCookieEncoder.encode("JSESSIONID", sessionId));
 
-			HttpSessionStore.sessionMap.put(sessionId, HttpChannelEntity.BLANK);
+			httpChannelEntity = HttpChannelEntity.BLANK;
+			MemPool.registerClienId(sessionId, httpChannelEntity);
+		} else {
+			httpChannelEntity = (HttpChannelEntity) MemPool
+					.getChannelEntryByClientId(sessionId);
 		}
+
 		res.headers().set(CONTENT_TYPE, HEADER_CONTENT_TYPE);
 		setContentLength(res, content.readableBytes());
 
 		sendHttpResponse(ctx, req, res);
-		// ctx.executor().schedule(command, delay, unit)
+
+		ScheduledFuture<?> scheduleTask = ctx.executor().schedule(
+				new SessionTimeoutTask(sessionId), 5, TimeUnit.SECONDS);
+
+		httpChannelEntity.setScheduleTask(scheduleTask);
 	}
 
 	private static void sendHttpResponse(ChannelHandlerContext ctx,
@@ -261,8 +288,10 @@ public class HttpJsonpTransport extends HttpTransport {
 
 		@Override
 		public void run() {
-			HttpSessionStore.sessionMap.remove(sessionId);
-			// TODO unregister topics
+			ChannelEntity chn = MemPool
+					.getChannelEntryByClientId(this.sessionId);
+			MemPool.unregisterChannel(chn);
+			MemPool.unregisterClientId(sessionId);
 		}
 	};
 }

@@ -1,35 +1,26 @@
 package io.mqtt.handler.entity;
 
 import io.mqtt.handler.http.HttpJsonpTransport;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.LinkedList;
+import java.util.Queue;
 
 import org.meqantt.message.Message;
 import org.meqantt.message.PublishMessage;
 
-public class HttpJsonpChannelEntity extends ChannelEntity {
+public class HttpJsonpChannelEntity extends HttpChannelEntity {
 	private static final InternalLogger logger = InternalLoggerFactory
 			.getInstance(HttpJsonpChannelEntity.class);
 
-	private String sessionId;
-	private BlockingQueue<Message> queue;
-
+	private Queue<Message> queue;
 	private ChannelHandlerContext ctx = null;
 
 	public HttpJsonpChannelEntity(String sessionId) {
-		this.sessionId = sessionId;
-		queue = new LinkedBlockingQueue<Message>();
-	}
-
-	@Override
-	public Channel getChannel() {
-		throw new UnsupportedOperationException(
-				"The TcpChannelEntity.java does not supported getChannel() method !");
+		super(sessionId);
+		queue = new LinkedList<Message>();
 	}
 
 	@Override
@@ -52,11 +43,7 @@ public class HttpJsonpChannelEntity extends ChannelEntity {
 		ctx = null;
 	}
 
-	public String getSessionId() {
-		return sessionId;
-	}
-
-	public BlockingQueue<Message> getQueue() {
+	public Queue<Message> getQueue() {
 		return queue;
 	}
 
@@ -66,15 +53,5 @@ public class HttpJsonpChannelEntity extends ChannelEntity {
 
 	public void setCtx(ChannelHandlerContext ctx) {
 		this.ctx = ctx;
-	}
-
-	@Override
-	public int hashCode() {
-		return getSessionId().hashCode();
-	}
-
-	@Override
-	public String toString() {
-		return "JSESSIONID=" + getSessionId();
 	}
 }

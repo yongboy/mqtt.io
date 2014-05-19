@@ -32,7 +32,7 @@ public class ConnectProcesser implements Processer {
 		ctx.pipeline().addFirst("readTimeOutHandler",
 				new ReadTimeoutHandler(timeout, TimeUnit.SECONDS));
 
-		MemPool.putClienId(ctx.channel(), cm.getClientId());
+		MemPool.registerClienId(cm.getClientId(), ctx.channel());
 
 		return ACCEPTED;
 	}

@@ -1,6 +1,6 @@
 package io.mqtt.handler.http;
 
-import io.mqtt.handler.entity.HttpJsonpChannelEntity;
+import io.mqtt.tool.MemPool;
 import io.netty.handler.codec.http.Cookie;
 import io.netty.handler.codec.http.CookieDecoder;
 import io.netty.handler.codec.http.HttpHeaders;
@@ -12,12 +12,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class HttpSessionStore {
-	public final static ConcurrentHashMap<String, HttpJsonpChannelEntity> sessionMap = new ConcurrentHashMap<String, HttpJsonpChannelEntity>(
-			100000, 0.9f, 256);
-	
 	// Global Identiter/全局唯一
 	public static final AttributeKey<HttpRequest> key = AttributeKey
 			.valueOf("req");
@@ -35,13 +31,13 @@ public class HttpSessionStore {
 	}
 
 	public static boolean checkJSessionId(HttpRequest req) {
-		String jsessionId = getClientJSessionId(req);
+		String jsessionId = getClientSessionId(req);
 
 		if (jsessionId == null) {
 			return false;
 		}
 
-		return sessionMap.containsKey(jsessionId);
+		return MemPool.checkClientID(jsessionId);
 	}
 
 	public static boolean checkJSessionId(String sessionId) {
@@ -49,10 +45,10 @@ public class HttpSessionStore {
 			return false;
 		}
 
-		return sessionMap.containsKey(sessionId);
+		return MemPool.checkClientID(sessionId);
 	}
 
-	public static String getClientJSessionId(HttpRequest req) {
+	public static String getClientSessionId(HttpRequest req) {
 		Set<Cookie> cookies;
 		String value = req.headers().get(HttpHeaders.Names.COOKIE);
 		if (value == null) {

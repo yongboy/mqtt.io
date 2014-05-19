@@ -1,9 +1,11 @@
 package io.mqtt.tool;
 
 import io.mqtt.handler.entity.ChannelEntity;
+import io.mqtt.handler.entity.TcpChannelEntity;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
+import io.netty.handler.codec.http.HttpRequest;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -11,7 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class MemPool {
 
-	private final static ConcurrentHashMap<String, Channel> cientIdChannelMap = new ConcurrentHashMap<String, Channel>(
+	private final static ConcurrentHashMap<String, ChannelEntity> cientIdChannelMap = new ConcurrentHashMap<String, ChannelEntity>(
 			1000000, 0.9f, 256);
 	private final static ConcurrentHashMap<Channel, String> channelClientIdMap = new ConcurrentHashMap<Channel, String>();
 
@@ -26,22 +28,46 @@ public class MemPool {
 		}
 	};
 
-	public static void putClienId(Channel channel, String clientId) {
-		if (channel == null) {
+	public static void registerClienId(String clientId, ChannelEntity chn) {
+		if (chn == null) {
 			return;
 		}
 		if (clientId == null) {
 			return;
 		}
-		channel.closeFuture().addListener(clientRemover);
-		channelClientIdMap.put(channel, clientId);
-		Channel oldChannel = cientIdChannelMap.put(clientId, channel);
+
+		ChannelEntity oldChannel = cientIdChannelMap.put(clientId, chn);
 		if (oldChannel != null) {
-			removeChannel(oldChannel);
-			oldChannel.close();
+			unregisterChannel(oldChannel);
 		}
 	}
 
+	public static void unregisterClientId(String clientId) {
+		if (clientId == null) {
+			return;
+		}
+
+		cientIdChannelMap.remove(clientId);
+	}
+
+	public static void registerClienId(String clientId, Channel chn) {
+		if (chn == null) {
+			return;
+		}
+		if (clientId == null) {
+			return;
+		}
+		chn.closeFuture().addListener(clientRemover);
+		// channelClientIdMap.put(channel, clientId);
+		ChannelEntity oldChannel = cientIdChannelMap.put(clientId,
+				new TcpChannelEntity(chn));
+		if (oldChannel != null) {
+			removeChannel(oldChannel.getChannel());
+			oldChannel.getChannel().close();
+		}
+	}
+
+	@Deprecated
 	public static void removeChannel(Channel chn) {
 		Set<String> topicSet = channelTopicMap.remove(chn);
 		if (topicSet != null) {
@@ -58,6 +84,24 @@ public class MemPool {
 		chn.closeFuture().removeListener(clientRemover);
 	}
 
+	public static void unregisterChannel(ChannelEntity chn) {
+		Set<String> topicSet = channelTopicMap.remove(chn);
+		if (topicSet != null) {
+			for (String topic : topicSet) {
+				unregisterTopic(chn, topic);
+			}
+		}
+
+		if (chn.getChannel() != null) {
+			String clientId = channelClientIdMap.remove(chn.getChannel());
+			if (clientId != null) {
+				cientIdChannelMap.remove(clientId, chn);
+			}
+
+			chn.getChannel().closeFuture().removeListener(clientRemover);
+		}
+	}
+
 	public static void registerTopic(ChannelEntity chn, String topic) {
 		if (chn == null) {
 			return;
@@ -65,7 +109,7 @@ public class MemPool {
 		if (topic == null) {
 			return;
 		}
-		
+
 		Set<String> topicSet = channelTopicMap.get(chn);
 		if (topicSet == null) {
 			topicSet = new HashSet<String>(1);
@@ -85,6 +129,20 @@ public class MemPool {
 
 	public static void unregisterTopic(Channel chn, String topic) {
 		Set<ChannelEntity> channelSet = topicChannelMap.get(topic);
+		for (ChannelEntity oneChn : channelSet) {
+			if (oneChn.getChannel() == chn) {
+				channelSet.remove(oneChn);
+				break;
+			}
+		}
+		channelSet.remove(chn);
+		if (channelSet.isEmpty()) {
+			topicChannelMap.remove(topic);
+		}
+	}
+
+	public static void unregisterTopic(ChannelEntity chn, String topic) {
+		Set<ChannelEntity> channelSet = topicChannelMap.get(topic);
 		channelSet.remove(chn);
 		if (channelSet.isEmpty()) {
 			topicChannelMap.remove(topic);
@@ -93,6 +151,14 @@ public class MemPool {
 
 	public static String getClientId(Channel chn) {
 		return channelClientIdMap.get(chn);
+	}
+
+	public static ChannelEntity getChannelEntryByClientId(String clientID) {
+		return cientIdChannelMap.get(clientID);
+	}
+
+	public static boolean checkClientID(String clientID) {
+		return cientIdChannelMap.containsKey(clientID);
 	}
 
 	public static Set<ChannelEntity> getChannelByTopics(String topic) {

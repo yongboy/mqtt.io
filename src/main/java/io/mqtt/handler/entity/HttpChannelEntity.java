@@ -1,11 +1,46 @@
 package io.mqtt.handler.entity;
 
-public class HttpChannelEntity extends HttpJsonpChannelEntity {
+import org.meqantt.message.Message;
 
-	private HttpChannelEntity(String sessionId) {
-		super(sessionId);
+import io.netty.util.concurrent.ScheduledFuture;
+
+public class HttpChannelEntity extends ChannelEntity {
+
+	private String sessionId;
+	private ScheduledFuture<?> scheduleTask = null;
+
+	protected HttpChannelEntity() {
 	}
 
-	public static final HttpJsonpChannelEntity BLANK = new HttpJsonpChannelEntity(
-			null);
+	public HttpChannelEntity(String sessionId) {
+		this.sessionId = sessionId;
+	}
+
+	public String getSessionId() {
+		return sessionId;
+	}
+
+	public ScheduledFuture<?> getScheduleTask() {
+		return scheduleTask;
+	}
+
+	public void setScheduleTask(ScheduledFuture<?> scheduleTask) {
+		this.scheduleTask = scheduleTask;
+	}
+
+	public static final HttpChannelEntity BLANK = new HttpChannelEntity(null);
+
+	@Override
+	public void write(Message message) {
+	}
+
+	@Override
+	public int hashCode() {
+		return getSessionId().hashCode();
+	}
+
+	@Override
+	public String toString() {
+		return "JSESSIONID=" + getSessionId();
+	}
 }
