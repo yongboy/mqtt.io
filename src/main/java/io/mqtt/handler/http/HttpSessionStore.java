@@ -6,8 +6,14 @@ import io.netty.handler.codec.http.CookieDecoder;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.QueryStringDecoder;
+import io.netty.handler.codec.http.multipart.Attribute;
+import io.netty.handler.codec.http.multipart.DefaultHttpDataFactory;
+import io.netty.handler.codec.http.multipart.HttpPostRequestDecoder;
+import io.netty.handler.codec.http.multipart.InterfaceHttpData;
+import io.netty.handler.codec.http.multipart.InterfaceHttpData.HttpDataType;
 import io.netty.util.AttributeKey;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -24,6 +30,25 @@ public class HttpSessionStore {
 
 		return uriAttributes.containsKey(name) ? uriAttributes.get(name).get(0)
 				: null;
+	}
+	
+	public static String getPostParameter(HttpRequest req, String name) {
+		HttpPostRequestDecoder decoder = new HttpPostRequestDecoder(
+				new DefaultHttpDataFactory(false), req);
+
+		InterfaceHttpData data = decoder.getBodyHttpData(name);
+		if (data.getHttpDataType() == HttpDataType.Attribute) {
+			Attribute attribute = (Attribute) data;
+			String value = null;
+			try {
+				value = attribute.getValue();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			return value;
+		}
+
+		return null;
 	}
 
 	public static String genJSessionId() {

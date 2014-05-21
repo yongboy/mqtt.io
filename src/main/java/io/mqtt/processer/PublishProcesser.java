@@ -1,10 +1,7 @@
 package io.mqtt.processer;
 
-import io.mqtt.handler.entity.TcpChannelEntity;
+import io.mqtt.handler.entity.ChannelEntity;
 import io.mqtt.tool.MemPool;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
@@ -20,14 +17,6 @@ public class PublishProcesser implements Processer {
 			.getInstance(PublishProcesser.class);
 	private static DisconnectMessage DISCONNECT = new DisconnectMessage();
 
-	public static ChannelFutureListener CLOSE_ON_FAILURE = new ChannelFutureListener() {
-		public void operationComplete(ChannelFuture future) {
-			if (!future.isSuccess()) {
-				future.channel().close();
-			}
-		}
-	};
-
 	public Message proc(Message msg, ChannelHandlerContext ctx) {
 		String clientId = MemPool.getClientId(ctx.channel());
 		if (clientId == null) {
@@ -42,13 +31,9 @@ public class PublishProcesser implements Processer {
 		}
 
 		for (ChannelEntity channelEntity : channelEntitys) {
-			if (channelEntity instanceof TcpChannelEntity) {
-				Channel chn = channelEntity.getChannel();
-				chn.writeAndFlush(pm).addListener(CLOSE_ON_FAILURE);
-			} else {
-				logger.debug("PUBLISH to HttpChannelEntity ...");
-				channelEntity.write(pm);
-			}
+			logger.debug("PUBLISH to ChannelEntity topic = " + pm.getTopic()
+					+ " payload = " + pm.getDataAsString());
+			channelEntity.write(pm);
 		}
 
 		return null;

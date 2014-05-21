@@ -58,7 +58,7 @@ public class MemPool {
 			return;
 		}
 		chn.closeFuture().addListener(clientRemover);
-		// channelClientIdMap.put(channel, clientId);
+		channelClientIdMap.put(chn, clientId);
 		ChannelEntity oldChannel = cientIdChannelMap.put(clientId,
 				new TcpChannelEntity(chn));
 		if (oldChannel != null) {
@@ -166,5 +166,9 @@ public class MemPool {
 			return null;
 		}
 		return topicChannelMap.get(topic);
+	}
+
+	public static Set<String> getTopicsByChannelEntry(ChannelEntity chn) {
+		return channelTopicMap.get(chn);
 	}
 }

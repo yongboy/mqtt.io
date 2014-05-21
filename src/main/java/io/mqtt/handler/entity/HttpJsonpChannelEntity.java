@@ -17,10 +17,12 @@ public class HttpJsonpChannelEntity extends HttpChannelEntity {
 
 	private Queue<Message> queue;
 	private ChannelHandlerContext ctx = null;
+	private boolean isInit;
 
-	public HttpJsonpChannelEntity(String sessionId) {
+	public HttpJsonpChannelEntity(String sessionId, boolean isInit) {
 		super(sessionId);
 		queue = new LinkedList<Message>();
+		this.isInit = isInit;
 	}
 
 	@Override
@@ -53,5 +55,14 @@ public class HttpJsonpChannelEntity extends HttpChannelEntity {
 
 	public void setCtx(ChannelHandlerContext ctx) {
 		this.ctx = ctx;
+	}
+	
+	public void setBlank(boolean isInit) {
+		this.isInit = isInit;
+	}
+
+	@Override
+	public boolean isBlank(){
+		return this.isInit;
 	}
 }

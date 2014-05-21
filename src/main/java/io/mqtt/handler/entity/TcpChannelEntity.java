@@ -1,10 +1,19 @@
 package io.mqtt.handler.entity;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 
 import org.meqantt.message.Message;
 
 public class TcpChannelEntity extends ChannelEntity {
+	private static ChannelFutureListener CLOSE_ON_FAILURE = new ChannelFutureListener() {
+		public void operationComplete(ChannelFuture future) {
+			if (!future.isSuccess()) {
+				future.channel().close();
+			}
+		}
+	};
 
 	protected Channel channel;
 
@@ -19,6 +28,7 @@ public class TcpChannelEntity extends ChannelEntity {
 
 	@Override
 	public void write(Message message) {
-		this.channel.writeAndFlush(message);
+		if (channel.isOpen())
+			this.channel.writeAndFlush(message).addListener(CLOSE_ON_FAILURE);
 	}
 }

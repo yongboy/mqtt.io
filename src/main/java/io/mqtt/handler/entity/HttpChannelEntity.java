@@ -28,8 +28,6 @@ public class HttpChannelEntity extends ChannelEntity {
 		this.scheduleTask = scheduleTask;
 	}
 
-	public static final HttpChannelEntity BLANK = new HttpChannelEntity(null);
-
 	@Override
 	public void write(Message message) {
 	}
@@ -42,5 +40,12 @@ public class HttpChannelEntity extends ChannelEntity {
 	@Override
 	public String toString() {
 		return "JSESSIONID=" + getSessionId();
+	}
+	
+	public boolean isBlank(){
+		return true;
+	}
+	
+	public void setBlank(boolean isInit) {
 	}
 }
