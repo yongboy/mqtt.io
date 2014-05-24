@@ -46,11 +46,16 @@ public class HttpJsonpTransport extends HttpTransport {
 	private static final InternalLogger logger = InternalLoggerFactory
 			.getInstance(HttpJsonpTransport.class);
 
-	public static final String PREFIX = "/jsonp/";
+	private static final String PREFIX = "/jsonp/";
 
 	private final static String HEADER_CONTENT_TYPE = "text/javascript; charset=UTF-8";
 	private final static String TEMPLATE = "%s(%s);";
 	private final static Gson gson = new Gson();
+
+	@Override
+	public String getPrefixUri() {
+		return PREFIX;
+	}
 
 	@Override
 	public void handleRequest(ChannelHandlerContext ctx, FullHttpRequest req)
@@ -59,7 +64,7 @@ public class HttpJsonpTransport extends HttpTransport {
 			handleConnect(ctx, req);
 		} else if (req.getUri().contains("/jsonp/subscribe")) {
 			handleSubscrible(ctx, req);
-		} else if (req.getUri().contains("/jsonp/polling")) {
+		} else if (req.getUri().contains("/jsonp/waiting")) {
 			handleWaitingMsg(ctx, req);
 		} else if (req.getUri().contains("/jsonp/unsubscrible")) {
 			handleUnsubscrible(ctx, req);
@@ -95,7 +100,6 @@ public class HttpJsonpTransport extends HttpTransport {
 
 		String topic = HttpSessionStore.getParameter(req, "topic");
 		String payload = HttpSessionStore.getParameter(req, "payload");
-		String qosStr = HttpSessionStore.getParameter(req, "qos");
 
 		if (StringUtils.isBlank(topic) || StringUtils.isBlank(payload)) {
 			ByteBuf content = ctx

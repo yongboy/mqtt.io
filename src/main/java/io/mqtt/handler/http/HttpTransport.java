@@ -11,4 +11,7 @@ public abstract class HttpTransport {
 
 	public abstract void handleRequest(ChannelHandlerContext ctx,
 			FullHttpRequest req) throws Exception;
+	
+	
+	public abstract String getPrefixUri();
 }

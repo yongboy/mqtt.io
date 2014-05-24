@@ -5,7 +5,6 @@ import io.mqtt.handler.entity.TcpChannelEntity;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
-import io.netty.handler.codec.http.HttpRequest;
 
 import java.util.HashSet;
 import java.util.Set;

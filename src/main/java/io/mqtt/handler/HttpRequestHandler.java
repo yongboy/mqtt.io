@@ -2,27 +2,22 @@ package io.mqtt.handler;
 
 import static io.netty.handler.codec.http.HttpHeaders.isKeepAlive;
 import static io.netty.handler.codec.http.HttpHeaders.setContentLength;
-import static io.netty.handler.codec.http.HttpMethod.GET;
 import static io.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
-import static io.netty.handler.codec.http.HttpResponseStatus.FORBIDDEN;
-import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
-import io.mqtt.handler.http.HttpTransport;
-import io.mqtt.handler.http.HttpJsonpTransport;
 import io.mqtt.handler.http.HttpSessionStore;
+import io.mqtt.handler.http.HttpTransport;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.timeout.ReadTimeoutException;
-import io.netty.util.AttributeKey;
 import io.netty.util.CharsetUtil;
 import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
@@ -40,10 +35,6 @@ public class HttpRequestHandler extends
 
 	private static Map<String, HttpTransport> transportMap = new HashMap<String, HttpTransport>(
 			1);
-	static {
-		HttpJsonpTransport httpJsonpTransport = new HttpJsonpTransport();
-		transportMap.put(HttpJsonpTransport.PREFIX, httpJsonpTransport);
-	}
 
 	public HttpRequestHandler(String websocketUri) {
 		this.websocketUri = websocketUri;
@@ -53,27 +44,15 @@ public class HttpRequestHandler extends
 	protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest req)
 			throws Exception {
 		if (!req.getDecoderResult().isSuccess()) {
+			logger.debug("invalid http request");
 			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1,
 					BAD_REQUEST));
 			return;
 		}
 
 		if (req.getUri().equalsIgnoreCase(this.websocketUri)) {
+			logger.debug("it is websocket request");
 			ctx.fireChannelRead(req.retain());
-			return;
-		}
-
-		// Allow only GET methods.
-		if (req.getMethod() != GET) {
-			sendHttpResponse(ctx, req, new DefaultFullHttpResponse(HTTP_1_1,
-					FORBIDDEN));
-			return;
-		}
-
-		if ("/favicon.ico".equals(req.getUri())) {
-			FullHttpResponse res = new DefaultFullHttpResponse(HTTP_1_1,
-					NOT_FOUND);
-			sendHttpResponse(ctx, req, res);
 			return;
 		}
 
@@ -116,7 +95,6 @@ public class HttpRequestHandler extends
 		}
 
 		return null;
-
 	}
 
 	private static void sendHttpResponse(ChannelHandlerContext ctx,
@@ -135,5 +113,12 @@ public class HttpRequestHandler extends
 		if (!isKeepAlive(req) || res.getStatus().code() != 200) {
 			f.addListener(ChannelFutureListener.CLOSE);
 		}
+	}
+
+	public static void registerTransport(HttpTransport httpTransport) {
+		if (httpTransport == null)
+			return;
+
+		transportMap.put(httpTransport.getPrefixUri(), httpTransport);
 	}
 }
