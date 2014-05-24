@@ -1,6 +1,8 @@
 target/
 bin/
+.settings/
 .classpath
 .project
 pub-*
 sub-*
+*.log

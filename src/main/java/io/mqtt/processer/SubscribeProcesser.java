@@ -1,5 +1,8 @@
-package com.mqtt.io.processer;
+package io.mqtt.processer;
 
+import io.mqtt.handler.entity.ChannelEntity;
+import io.mqtt.handler.entity.TcpChannelEntity;
+import io.mqtt.tool.MemPool;
 import io.netty.channel.ChannelHandlerContext;
 
 import org.meqantt.message.DisconnectMessage;
@@ -7,8 +10,6 @@ import org.meqantt.message.Message;
 import org.meqantt.message.QoS;
 import org.meqantt.message.SubAckMessage;
 import org.meqantt.message.SubscribeMessage;
-
-import com.mqtt.io.tool.MemPool;
 
 public class SubscribeProcesser implements Processer {
 
@@ -26,7 +27,9 @@ public class SubscribeProcesser implements Processer {
 		if (sm.getTopics() != null) {
 			for (String topic : sm.getTopics()) {
 				sam.addQoS(QoS.AT_MOST_ONCE);
-				MemPool.putTopic(ctx.channel(), topic);
+				ChannelEntity channelEntity = new TcpChannelEntity(
+						ctx.channel());
+				MemPool.registerTopic(channelEntity, topic);
 			}
 		}
 

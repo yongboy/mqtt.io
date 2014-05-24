@@ -14,7 +14,7 @@ public class PubWebMessage {
 		String tcpUrl = "tcp://127.0.0.1:1883";
 		String clientId = "pub-msg/client";
 		String topicName = "sub-msg/webclient1";
-		String message = "Hello Mqtt Server !";
+		String message = "{id:1, msg:'Hello Mqtt Server !'}";
 		
 		System.out.println("start...");
 		pubMsg(tcpUrl, clientId, topicName, message);

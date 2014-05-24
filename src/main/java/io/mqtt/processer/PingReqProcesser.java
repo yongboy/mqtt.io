@@ -1,12 +1,11 @@
-package com.mqtt.io.processer;
+package io.mqtt.processer;
 
+import io.mqtt.tool.MemPool;
 import io.netty.channel.ChannelHandlerContext;
 
 import org.meqantt.message.DisconnectMessage;
 import org.meqantt.message.Message;
 import org.meqantt.message.PingRespMessage;
-
-import com.mqtt.io.tool.MemPool;
 
 public class PingReqProcesser implements Processer {
 

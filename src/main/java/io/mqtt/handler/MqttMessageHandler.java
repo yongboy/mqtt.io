@@ -1,10 +1,18 @@
-package com.mqtt.io.server;
+package io.mqtt.handler;
 
+import io.mqtt.processer.ConnectProcesser;
+import io.mqtt.processer.DisConnectProcesser;
+import io.mqtt.processer.PingReqProcesser;
+import io.mqtt.processer.Processer;
+import io.mqtt.processer.PublishProcesser;
+import io.mqtt.processer.SubscribeProcesser;
+import io.mqtt.processer.UnsubscribeProcesser;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.timeout.ReadTimeoutException;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -15,26 +23,22 @@ import org.meqantt.message.Message;
 import org.meqantt.message.Message.Type;
 import org.meqantt.message.PingRespMessage;
 
-import com.mqtt.io.processer.ConnectProcesser;
-import com.mqtt.io.processer.DisConnectProcesser;
-import com.mqtt.io.processer.PingReqProcesser;
-import com.mqtt.io.processer.Processer;
-import com.mqtt.io.processer.PublishProcesser;
-import com.mqtt.io.processer.SubscribeProcesser;
-import com.mqtt.io.processer.UnsubscribeProcesser;
-
-public class MessageHandler extends ChannelInboundHandlerAdapter {
+public class MqttMessageHandler extends ChannelInboundHandlerAdapter {
 	private static PingRespMessage PINGRESP = new PingRespMessage();
 
-	public static Map<Message.Type, Processer> processers = new HashMap<Message.Type, Processer>();
-
+	private static final Map<Message.Type, Processer> processers;
 	static {
-		processers.put(Type.CONNECT, new ConnectProcesser());
-		processers.put(Type.PUBLISH, new PublishProcesser());
-		processers.put(Type.SUBSCRIBE, new SubscribeProcesser());
-		processers.put(Type.UNSUBSCRIBE, new UnsubscribeProcesser());
-		processers.put(Type.PINGREQ, new PingReqProcesser());
-		processers.put(Type.DISCONNECT, new DisConnectProcesser());
+		Map<Message.Type, Processer> map = new HashMap<Message.Type, Processer>(
+				6);
+
+		map.put(Type.CONNECT, new ConnectProcesser());
+		map.put(Type.PUBLISH, new PublishProcesser());
+		map.put(Type.SUBSCRIBE, new SubscribeProcesser());
+		map.put(Type.UNSUBSCRIBE, new UnsubscribeProcesser());
+		map.put(Type.PINGREQ, new PingReqProcesser());
+		map.put(Type.DISCONNECT, new DisConnectProcesser());
+
+		processers = Collections.unmodifiableMap(map);
 	}
 
 	@Override
@@ -42,8 +46,8 @@ public class MessageHandler extends ChannelInboundHandlerAdapter {
 			throws Exception {
 		try {
 			if (e.getCause() instanceof ReadTimeoutException) {
-				ctx.write(PINGRESP)
-						.addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
+				ctx.write(PINGRESP).addListener(
+						ChannelFutureListener.CLOSE_ON_FAILURE);
 			} else {
 				ctx.channel().close();
 			}
@@ -51,6 +55,8 @@ public class MessageHandler extends ChannelInboundHandlerAdapter {
 			t.printStackTrace();
 			ctx.channel().close();
 		}
+
+		e.printStackTrace();
 	}
 
 	@Override
@@ -65,20 +71,19 @@ public class MessageHandler extends ChannelInboundHandlerAdapter {
 		if (rmsg == null) {
 			return;
 		}
-		
+
 		if (rmsg instanceof ConnAckMessage
 				&& ((ConnAckMessage) rmsg).getStatus() != ConnectionStatus.ACCEPTED) {
 			ctx.write(rmsg).addListener(ChannelFutureListener.CLOSE);
 		} else if (rmsg instanceof DisconnectMessage) {
 			ctx.write(rmsg).addListener(ChannelFutureListener.CLOSE);
 		} else {
-			ctx.write(rmsg)
-					.addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
+			ctx.write(rmsg).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
 		}
 	}
-	
-    @Override
-    public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
-        ctx.flush();
-    }
+
+	@Override
+	public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
+		ctx.flush();
+	}
 }

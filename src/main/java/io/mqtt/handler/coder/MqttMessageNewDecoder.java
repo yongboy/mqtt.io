@@ -1,4 +1,4 @@
-package com.mqtt.io.coder;
+package io.mqtt.handler.coder;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -13,7 +13,7 @@ import org.meqantt.message.MessageInputStream;
 public class MqttMessageNewDecoder extends MessageToMessageDecoder<ByteBuf> {
 
 	@Override
-	protected void decode(ChannelHandlerContext ctx, ByteBuf buf,
+	public void decode(ChannelHandlerContext ctx, ByteBuf buf,
 			List<Object> out) throws Exception {
 		if (buf.readableBytes() < 2) {
 			return;
