@@ -24,9 +24,11 @@ public class HttpChannelInitializer extends ChannelInitializer<SocketChannel> {
 
 	@Override
 	public void initChannel(final SocketChannel ch) throws Exception {
-		ch.pipeline().addLast(new HttpServerCodec(),
+		ch.pipeline().addLast(
+				new HttpServerCodec(),
 				new MqttMessageWebSocketFrameEncoder(),
-				new HttpObjectAggregator(65536), httpRequestHandler,
+				new HttpObjectAggregator(65536), 
+				httpRequestHandler,
 				new WebSocketServerProtocolHandler(websocketUri),
 				new MqttMessageWebSocketFrameDecoder(),
 				new MqttMessageHandler());

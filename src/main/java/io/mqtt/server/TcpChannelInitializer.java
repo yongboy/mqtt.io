@@ -12,8 +12,9 @@ public class TcpChannelInitializer extends ChannelInitializer<SocketChannel> {
 	@Override
 	public void initChannel(SocketChannel ch) throws Exception {
 		ChannelPipeline pipeline = ch.pipeline();
-		pipeline.addLast("encoder", new MqttMessageNewEncoder());
-		pipeline.addLast("decoder", new MqttMessageNewDecoder());
-		pipeline.addLast("handler", new MqttMessageHandler());
+		pipeline.addLast(
+				new MqttMessageNewEncoder(),
+				new MqttMessageNewDecoder(),
+				new MqttMessageHandler());
 	}
 }
