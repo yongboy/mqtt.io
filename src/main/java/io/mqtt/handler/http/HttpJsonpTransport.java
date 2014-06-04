@@ -177,7 +177,7 @@ public class HttpJsonpTransport extends HttpTransport {
 		res.headers().set(CONTENT_TYPE, HEADER_CONTENT_TYPE);
 		res.headers().set(HttpHeaders.Names.CONNECTION,
 				HttpHeaders.Values.KEEP_ALIVE);
-		res.headers().set("X-XSS-Protection", "0");
+		//res.headers().set("X-XSS-Protection", "0");
 
 		if (req != null && req.headers().get("Origin") != null) {
 			res.headers().set("Access-Control-Allow-Origin",
@@ -307,12 +307,13 @@ public class HttpJsonpTransport extends HttpTransport {
 		map.put("status", true);
 		map.put("clientId", sessionId);
 		String result = gson.toJson(map);
-		ByteBuf content = ctx.alloc().directBuffer()
-				.writeBytes(result.getBytes());
+		ByteBuf content = ctx.alloc().directBuffer();
+		content.writeBytes(getTargetFormatMessage(req,
+				result).getBytes(CharsetUtil.UTF_8));
 
 		FullHttpResponse res = new DefaultFullHttpResponse(HTTP_1_1, OK,
 				content);
-		if (isConnected) {
+		if (!isConnected) {
 			res.headers().add("Set-Cookie",
 					ServerCookieEncoder.encode("JSESSIONID", sessionId));
 		}
@@ -328,8 +329,10 @@ public class HttpJsonpTransport extends HttpTransport {
 
 	private static void sendFullHttpOKResponse(ChannelHandlerContext ctx,
 			HttpRequest req, String result) {
-		ByteBuf content = ctx.alloc().directBuffer()
-				.writeBytes(result.getBytes());
+		ByteBuf content = ctx.alloc().directBuffer();
+		
+		content.writeBytes(getTargetFormatMessage(req,
+				result).getBytes(CharsetUtil.UTF_8));
 		FullHttpResponse res = new DefaultFullHttpResponse(HTTP_1_1, OK,
 				content);
 
@@ -360,9 +363,9 @@ public class HttpJsonpTransport extends HttpTransport {
 	private static String getTargetFormatMessage(HttpRequest req,
 			String jsonMessage) {
 		String callbackparam = HttpSessionStore.getParameter(req,
-				"jsoncallback");
+				"jsonpcallback");
 		if (callbackparam == null) {
-			callbackparam = "jsoncallback";
+			callbackparam = "jsonpcallback";
 		}
 
 		logger.debug("format json message : "

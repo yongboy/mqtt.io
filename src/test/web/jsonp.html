@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>jsonp example</title>
+<script src="http://libs.baidu.com/jquery/1.5.0/jquery.js"></script>
+<script type="text/javascript">
+	var clientId = "";
+	var urlPrefix = "http://127.0.0.1:8080/jsonp";
+    $(document).ready(function(){
+    	doConnect();
+    });
+   	
+    function doConnect(){
+    	jreq(urlPrefix + '/connect', '', function(data){
+    		if(data.status){
+    			log("connected!");
+    			clientId = data.clientId;
+    			setTimeout(doSub, 10);
+    		}else{
+    			alert("failure !");
+    		}
+    	});
+    }
+    
+    function doSub(){
+    	jreq(urlPrefix + '/subscribe', 'topic=sub-msg/webclient1', function(data){
+    		if(data.status){
+    			log("subscribed!");
+    			doWaiting();
+    		}else{
+    			log("bad!");
+    		}
+    	});
+    }
+    
+    function doWaiting(){
+    	jreq(urlPrefix + '/waiting', '', function(data){
+    		log("Got Message : id = " + data.id + " msg = " + data.msg);
+    		doWaiting();
+    	});
+    }
+    
+    function jreq(url, parameter, fn){
+    	$.ajax({
+            url:url,
+            dataType:"jsonp",
+            jsonp:"jsonpcallback",
+            data: parameter, //请求数据
+            timeout: 300000,
+            async:true,
+            success:function(data){
+                fn(data);
+            }
+       });
+    }
+    
+	function log(val){
+		$("#log").html(val + "<br/>" + $("#log").html());
+	}    
+</script>
+</head>
+<body>
+<div id="log"></div>
+</body>
+</html>
