@@ -160,8 +160,10 @@ public class HttpJsonpTransport extends HttpTransport {
 		HttpJsonpChannelEntity httpChannelEntity = (HttpJsonpChannelEntity) MemPool
 				.getChannelEntryByClientId(sessionId);
 		httpChannelEntity.setCtx(null);
+		
+		ByteBuf content = ctx.alloc().directBuffer();
+		content.writeBytes(getTargetFormatMessage(req, "{\"id\":0, msg:\"no msg\"}").getBytes(CharsetUtil.UTF_8));
 		// empty json
-		ByteBuf content = Unpooled.copiedBuffer("{}", CharsetUtil.UTF_8);
 		ctx.writeAndFlush(content).addListener(ChannelFutureListener.CLOSE);
 	}
 
