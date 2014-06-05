@@ -16,7 +16,7 @@
     		if(data.status){
     			log("connected!");
     			clientId = data.clientId;
-    			setTimeout(doSub, 10);
+    			doSub();
     		}else{
     			alert("failure !");
     		}
